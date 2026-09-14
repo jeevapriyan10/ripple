@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+venv/
+.venv/
+env/
+ENV/
+.env
+.env.*
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+build/
+dist/
+.next/
+.nuxt/
+coverage/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-data/
+docker/volumes/
+
+# IDEs and editors
+.vscode/
+.idea/
+.antigravity/
+*.swp
+*.swo
+*~
+
+# Operating systems
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Secrets and credentials
+.env*
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
