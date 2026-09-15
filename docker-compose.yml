@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    volumes:
+      - ./backend/ripple:/app/ripple
+    command: >
+      sh -c "uvicorn ripple.main:app --host $$API_HOST --port $$API_PORT --reload"
+
+  frontend:
+    build:
+      context: ./frontend
+      target: builder
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+      API_PORT: ${API_PORT}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
