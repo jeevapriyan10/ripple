@@ -15,6 +15,7 @@ env/
 ENV/
 .env
 .env.*
+!.env.example
 
 # Node.js
 node_modules/
@@ -49,6 +50,7 @@ Desktop.ini
 
 # Secrets and credentials
 .env*
+!.env.example
 *.key
 *.pem
 *.p12
