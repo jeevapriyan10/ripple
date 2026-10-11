@@ -1,0 +1,19 @@
+name: CI Stub
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  placeholder:
+    name: Placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - name: CI Stub Notification
+        run: echo "CI pipeline will be implemented in Module 23"
