@@ -2,7 +2,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, status
 
 from ripple import __version__
 from ripple.config import get_settings
@@ -37,13 +37,15 @@ async def health() -> dict[str, str]:
 
 
 @router.get("/ready", summary="Readiness probe")
-async def ready() -> dict[str, Any]:
+async def ready(response: Response) -> dict[str, Any]:
     """Readiness probe.
 
-    Evaluates all registered dependency checks (e.g. Neo4j, Kafka).
-    Returns 200 with status and dependencies mapping.
+    Evaluates all registered dependency checks (e.g. Adapters, Neo4j, Kafka).
+    Returns 200 with status and dependencies mapping if healthy, or 503 with
+    status 'not_ready' if any check fails or raises an error.
     """
     dependencies: dict[str, Any] = {}
+    is_ready = True
 
     if READINESS_CHECKS:
         results = await asyncio.gather(
@@ -53,11 +55,28 @@ async def ready() -> dict[str, Any]:
         for result in results:
             if isinstance(result, Exception):
                 dependencies["error"] = str(result)
+                is_ready = False
             elif isinstance(result, tuple) and len(result) == 2:
-                name, status = result
-                dependencies[name] = status
+                name, check_status = result
+                dependencies[name] = check_status
+                if isinstance(check_status, dict):
+                    if (
+                        check_status.get("ready") is False
+                        or check_status.get("status") == "failed"
+                    ):
+                        is_ready = False
+                elif check_status is False:
+                    is_ready = False
+
+    if not is_ready:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {
+            "status": "not_ready",
+            "dependencies": dependencies,
+        }
 
     return {
         "status": "ready",
         "dependencies": dependencies,
     }
+
