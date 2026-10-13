@@ -1,0 +1,17 @@
+{
+  "event_type": "chargeback",
+  "network_reference": "NETREF_CARD_001_AUTH",
+  "processing_code": "00",
+  "pan": "4111111111111111",
+  "amount": "105.00",
+  "currency": "USD",
+  "transmission_time": "2026-11-01T10:00:00Z",
+  "reason_code": "4837",
+  "acquirer": {
+    "id": "ACQ_101"
+  },
+  "merchant": {
+    "id": "MERC_555"
+  },
+  "channel": "ecommerce"
+}

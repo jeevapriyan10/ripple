@@ -72,7 +72,6 @@ def make_dummy_adapter(network_id: str, version: str = "1.0.0") -> type[NetworkA
     return DummyAdapter
 
 
-
 def test_registry_register_get_unregister() -> None:
     """Assert registering, retrieving, and unregistering adapters work as expected."""
     registry = AdapterRegistry()
@@ -115,7 +114,7 @@ def test_duplicate_adapter_rejection_and_replace() -> None:
 
 
 def test_unknown_network_error_lists_available_ids() -> None:
-    """Assert get() on an unregistered network_id raises UnknownNetworkError listing available IDs."""
+    """Assert get() on an unregistered network_id raises error listing available IDs."""
     registry = AdapterRegistry()
     registry.register(make_dummy_adapter("alpha"))
     registry.register(make_dummy_adapter("beta"))
@@ -158,7 +157,7 @@ def test_route_uses_network_id_strictly() -> None:
 
 
 def test_thread_safety_concurrent_registrations() -> None:
-    """Assert AdapterRegistry handles concurrent registrations from multiple threads without race conditions."""
+    """Assert AdapterRegistry handles concurrent registrations without race conditions."""
     registry = AdapterRegistry()
     adapter_classes = [make_dummy_adapter(f"thread_rail_{i}") for i in range(25)]
 
@@ -191,7 +190,7 @@ def test_enabled_networks_filtering_all(caplog: pytest.LogCaptureFixture) -> Non
 def test_enabled_networks_filtering_subset_and_unknown_warning(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Assert ENABLED_NETWORKS filters to specified IDs and logs a warning for unknown IDs without crashing."""
+    """Assert ENABLED_NETWORKS filters to specified IDs and logs a warning for unknown IDs."""
     registry = AdapterRegistry()
     registry.register(make_dummy_adapter("rail_a"))
     registry.register(make_dummy_adapter("rail_b"))

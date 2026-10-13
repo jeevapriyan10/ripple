@@ -1,0 +1,15 @@
+{
+  "txn_id": "UPI_TXN_005_DEEMED",
+  "txn_type": "PAY",
+  "status": "DEEMED",
+  "amount": "350.00",
+  "currency": "INR",
+  "initiated_at": "2026-10-13T10:20:00+05:30",
+  "channel": "mobile_app",
+  "payer": {
+    "vpa": "charlie@oksbi"
+  },
+  "payee": {
+    "vpa": "dave@paytm"
+  }
+}

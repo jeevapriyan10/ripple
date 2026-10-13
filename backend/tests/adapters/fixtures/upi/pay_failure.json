@@ -1,0 +1,20 @@
+{
+  "txn_id": "UPI_TXN_002_PAY_FAIL",
+  "txn_type": "PAY",
+  "status": "FAILURE",
+  "response_code": "U30",
+  "amount": "500.00",
+  "currency": "INR",
+  "initiated_at": "2026-10-13T10:05:00+05:30",
+  "channel": "mobile_app",
+  "payer": {
+    "vpa": "alice@oksbi"
+  },
+  "payee": {
+    "vpa": "merchant@icici",
+    "merchant": {
+      "mcc": "5411",
+      "merchant_id": "MERC12345"
+    }
+  }
+}

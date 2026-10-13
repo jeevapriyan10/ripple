@@ -1,0 +1,18 @@
+{
+  "event_type": "authorization",
+  "network_reference": "NETREF_CARD_005_ATM",
+  "processing_code": "01",
+  "response_code": "00",
+  "pan": "4111111111111111",
+  "amount": "200.00",
+  "currency": "USD",
+  "transmission_time": "2026-10-13T14:00:00Z",
+  "acquirer": {
+    "id": "ACQ_ATM_99"
+  },
+  "channel": "atm",
+  "merchant": {
+    "id": "ATM_MACHINE_01",
+    "country": "US"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "event_type": "authorization",
+  "mti": "0100",
+  "network_reference": "NETREF_CARD_002_DECLINED",
+  "processing_code": "00",
+  "response_code": "05",
+  "pan": "4111111111111111",
+  "amount": "250.00",
+  "currency": "USD",
+  "transmission_time": "2026-10-13T12:05:00Z",
+  "acquirer": {
+    "id": "ACQ_101"
+  },
+  "scheme": "Visa",
+  "merchant": {
+    "id": "MERC_555"
+  },
+  "channel": "pos"
+}

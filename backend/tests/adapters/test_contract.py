@@ -27,7 +27,6 @@ from ripple.adapters.profile import (
 from ripple.domain.identity import IdentifierType, PartyIdentifier
 from ripple.domain.money import AssetClass, Money
 from ripple.domain.party import Party
-
 from ripple.domain.transaction import SettlementModel, Transaction, TransactionStatus
 
 _SAMPLE_PROFILE = NetworkProfile(
@@ -56,7 +55,7 @@ _SAMPLE_PROFILE = NetworkProfile(
 
 
 def test_subclass_missing_profile_fails_at_class_definition_time() -> None:
-    """Assert that defining a NetworkAdapter subclass without 'profile' raises AdapterRegistrationError."""
+    """Assert that defining a subclass without 'profile' raises AdapterRegistrationError."""
     with pytest.raises(AdapterRegistrationError) as exc_info:
 
         class MissingProfileAdapter(NetworkAdapter):
@@ -133,7 +132,6 @@ def test_normalize_batch_fault_isolation() -> None:
     receiver_id = deterministic_uuid("test_rail", "receiver_1")
 
     sender_party = Party(
-
         party_id=sender_id,
         home_network="test_rail",
         identifiers=[
@@ -182,7 +180,6 @@ def test_normalize_batch_fault_isolation() -> None:
                 receiver_identifier=receiver_party.identifiers[0],
                 amount=Money(amount=Decimal("10.00"), currency="USD", scale=2),
                 initiated_at=event.received_at,
-
                 settled_at=event.received_at,
                 observed_at=event.received_at,
                 status=TransactionStatus.SETTLED,
@@ -233,3 +230,45 @@ def test_normalize_batch_fault_isolation() -> None:
     assert failed_event == ev_bad
     assert isinstance(exc, NormalizationError)
     assert exc.field == "payload"
+
+
+def test_from_settings_default_and_custom_override() -> None:
+    """Assert from_settings defaults to parameterless cls() and can be overridden."""
+
+    class DefaultAdapter(NetworkAdapter):
+        profile: ClassVar[NetworkProfile] = _SAMPLE_PROFILE
+        adapter_version: ClassVar[str] = "1.0.0"
+
+        def can_handle(self, event: RawEvent) -> bool:
+            return True
+
+        def normalize(self, event: RawEvent) -> NormalizationResult:
+            raise NotImplementedError
+
+    inst_default = DefaultAdapter.from_settings(settings=None)
+    assert isinstance(inst_default, DefaultAdapter)
+
+    class ConfiguredAdapter(NetworkAdapter):
+        profile: ClassVar[NetworkProfile] = _SAMPLE_PROFILE
+        adapter_version: ClassVar[str] = "1.0.0"
+
+        def __init__(self, api_key: str) -> None:
+            self.api_key = api_key
+
+        @classmethod
+        def from_settings(cls, settings: object = None) -> "ConfiguredAdapter":
+            key = getattr(settings, "api_key", "default_key")
+            return cls(api_key=key)
+
+        def can_handle(self, event: RawEvent) -> bool:
+            return True
+
+        def normalize(self, event: RawEvent) -> NormalizationResult:
+            raise NotImplementedError
+
+    class DummySettings:
+        api_key = "custom_secret"
+
+    inst_custom = ConfiguredAdapter.from_settings(DummySettings())
+    assert isinstance(inst_custom, ConfiguredAdapter)
+    assert inst_custom.api_key == "custom_secret"

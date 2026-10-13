@@ -52,16 +52,18 @@ class AdapterRegistry:
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._adapters: dict[str, NetworkAdapter] = {}
+        self._failed_registrations: dict[str, str] = {}
 
     def register(
         self,
         adapter_cls_or_instance: type[NetworkAdapter] | NetworkAdapter,
         *,
         replace: bool = False,
+        settings: Any = None,
     ) -> NetworkAdapter:
         """Register a NetworkAdapter instance or subclass into the registry.
 
-        If a class is provided, it is instantiated without arguments.
+        If a class is provided, it is instantiated via cls.from_settings(settings).
         Raises DuplicateAdapterError if an adapter with the same network_id exists
         unless replace=True is passed.
         """
@@ -69,8 +71,11 @@ class AdapterRegistry:
             adapter_cls_or_instance, NetworkAdapter
         ):
             try:
-                instance = adapter_cls_or_instance()
+                cfg = settings if settings is not None else get_settings()
+                instance = adapter_cls_or_instance.from_settings(cfg)
             except Exception as exc:
+                if isinstance(exc, AdapterRegistrationError):
+                    raise
                 raise AdapterRegistrationError(
                     f"Failed to instantiate adapter class "
                     f"'{adapter_cls_or_instance.__name__}': {exc}"
@@ -92,6 +97,7 @@ class AdapterRegistry:
                     network_id=network_id,
                 )
             self._adapters[network_id] = instance
+            self._failed_registrations.pop(network_id, None)
             logger.info(
                 "Registered network adapter for '%s' (v%s)",
                 network_id,
@@ -99,10 +105,16 @@ class AdapterRegistry:
             )
             return instance
 
+    def failed_registrations(self) -> dict[str, str]:
+        """Return a mapping of network IDs that failed registration to error reasons."""
+        with self._lock:
+            return dict(self._failed_registrations)
+
     def unregister(self, network_id: str) -> NetworkAdapter | None:
         """Unregister and return the adapter for the given network_id, or None if not found."""
         clean_id = network_id.lower()
         with self._lock:
+
             removed = self._adapters.pop(clean_id, None)
             if removed:
                 logger.info("Unregistered network adapter for '%s'", clean_id)
@@ -151,6 +163,7 @@ class AdapterRegistry:
         """Remove all registered adapters. Intended primarily for isolated testing."""
         with self._lock:
             self._adapters.clear()
+            self._failed_registrations.clear()
 
 
 # Global default registry singleton
@@ -221,9 +234,7 @@ def discover_plugins(registry: AdapterRegistry | None = None) -> PluginDiscovery
         name = ep.name
         try:
             plugin_cls = ep.load()
-            if not (
-                isinstance(plugin_cls, type) and issubclass(plugin_cls, NetworkAdapter)
-            ):
+            if not (isinstance(plugin_cls, type) and issubclass(plugin_cls, NetworkAdapter)):
                 msg = (
                     f"Entry point '{name}' resolved to {plugin_cls}, "
                     "which is not a NetworkAdapter subclass."
@@ -259,10 +270,26 @@ def load_enabled_adapters(
     try:
         from ripple.adapters.universal import UniversalAdapter
 
-        reg.register(UniversalAdapter, replace=True)
+        reg.register(UniversalAdapter, replace=True, settings=cfg)
     except Exception as exc:
         logger.error("Failed to register built-in universal adapter: %s", exc)
+        reg._failed_registrations["universal"] = str(exc)
 
+    try:
+        from ripple.adapters.upi import UpiAdapter
+
+        reg.register(UpiAdapter, replace=True, settings=cfg)
+    except Exception as exc:
+        logger.error("Failed to register built-in UPI adapter: %s", exc)
+        reg._failed_registrations["upi"] = str(exc)
+
+    try:
+        from ripple.adapters.card import CardAdapter
+
+        reg.register(CardAdapter, replace=True, settings=cfg)
+    except Exception as exc:
+        logger.error("Failed to register built-in card adapter: %s", exc)
+        reg._failed_registrations["card"] = str(exc)
 
     # 2. Run external plugin discovery
     discover_plugins(registry=reg)
@@ -276,9 +303,7 @@ def load_enabled_adapters(
         )
         return
 
-    enabled_ids = {
-        item.strip().lower() for item in enabled_spec.split(",") if item.strip()
-    }
+    enabled_ids = {item.strip().lower() for item in enabled_spec.split(",") if item.strip()}
 
     current_ids = set(reg.network_ids())
 

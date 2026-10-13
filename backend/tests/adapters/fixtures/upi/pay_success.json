@@ -1,0 +1,32 @@
+{
+  "txn_id": "UPI_TXN_001_PAY_SUCCESS",
+  "rrn": "123456789012",
+  "txn_type": "PAY",
+  "status": "SUCCESS",
+  "response_code": "00",
+  "amount": "1500.50",
+  "currency": "INR",
+  "initiated_at": "2026-10-13T10:00:00+05:30",
+  "completed_at": "2026-10-13T10:00:05+05:30",
+  "channel": "mobile_app",
+  "device_id": "device_abc_123",
+  "ip_address": "103.21.244.1",
+  "purpose_code": "00",
+  "remarks": "Dinner split with friends",
+  "payer": {
+    "vpa": "alice@oksbi",
+    "phone": "+919876543210",
+    "account": {
+      "ifsc": "SBIN0001234",
+      "number": "12345678901"
+    }
+  },
+  "payee": {
+    "vpa": "bob@okaxis",
+    "phone": "+919876543211",
+    "account": {
+      "ifsc": "UTIB0000567",
+      "number": "98765432109"
+    }
+  }
+}

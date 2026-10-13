@@ -241,6 +241,15 @@ class NetworkAdapter(ABC):
                 "class attribute 'adapter_version' as a non-empty string."
             )
 
+    @classmethod
+    def from_settings(cls, settings: Any = None) -> Self:
+        """Construct an adapter instance configured from application settings.
+
+        Default implementation instantiates the adapter with no arguments.
+        Subclasses may override this method to extract network-specific configuration
+        (such as HMAC keys or routing endpoints) from settings.
+        """
+        return cls()
 
     @abstractmethod
     def can_handle(self, event: RawEvent) -> bool:
