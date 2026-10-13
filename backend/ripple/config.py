@@ -29,6 +29,8 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:80",
     ]
+    ENABLED_NETWORKS: str = "all"
+
 
     @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
     @classmethod

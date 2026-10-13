@@ -1,6 +1,8 @@
 import json
 import logging
 import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
@@ -8,7 +10,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ripple import __version__
+from ripple.adapters.registry import load_enabled_adapters
+from ripple.api.health import READINESS_CHECKS, register_readiness_check
 from ripple.api.health import router as health_router
+from ripple.api.networks import check_adapters
+from ripple.api.networks import router as networks_router
 from ripple.config import get_settings
 
 
@@ -48,11 +54,25 @@ def setup_logging(log_level: str) -> None:
     root_logger.handlers = [handler]
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Application lifespan context manager for startup and shutdown lifecycle management."""
+    settings = get_settings()
+    load_enabled_adapters(settings)
+    if check_adapters not in READINESS_CHECKS:
+        register_readiness_check(check_adapters)
+    try:
+        yield
+    finally:
+        if check_adapters in READINESS_CHECKS:
+            READINESS_CHECKS.remove(check_adapters)
+
+
 def create_app() -> FastAPI:
     """FastAPI application factory.
 
-    Configures metadata, structured logging, CORS middleware, and API routers
-    using centralized settings.
+    Configures metadata, structured logging, CORS middleware, lifespan events,
+    and API routers using centralized settings.
     """
     settings = get_settings()
     setup_logging(settings.LOG_LEVEL)
@@ -60,6 +80,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         version=__version__,
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -71,8 +92,10 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health_router)
+    app.include_router(networks_router, prefix="/api/v1")
 
     return app
+
 
 
 # Default app instance for direct uvicorn invocations
