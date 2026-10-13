@@ -29,6 +29,8 @@ WORKDIR /app
 COPY pyproject.toml ./
 RUN poetry install --no-root --no-ansi
 
+ENV PYTHONPATH=/app
+
 COPY ripple ./ripple
 COPY tests ./tests
 
