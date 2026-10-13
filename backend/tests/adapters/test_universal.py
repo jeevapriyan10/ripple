@@ -14,7 +14,6 @@ from ripple.domain.identity import IdentifierType
 
 
 def make_valid_universal_payload() -> tuple[dict[str, Any], datetime]:
-
     """Helper creating a valid payload dictionary matching universal domain models."""
     sender_id = str(uuid4())
     receiver_id = str(uuid4())
@@ -43,7 +42,6 @@ def make_valid_universal_payload() -> tuple[dict[str, Any], datetime]:
                 "currency": "USD",
                 "scale": 2,
             },
-
             "initiated_at": now.isoformat(),
             "settled_at": now.isoformat(),
             "observed_at": (now - timedelta(hours=5)).isoformat(),  # Stale timestamp
@@ -112,7 +110,7 @@ def test_universal_adapter_can_handle() -> None:
 
 
 def test_universal_adapter_round_trip_and_observed_at_override() -> None:
-    """Assert valid payload normalizes successfully and observed_at is overridden with received_at."""
+    """Assert valid payload normalizes and observed_at is overridden with received_at."""
     adapter = UniversalAdapter()
     payload, now = make_valid_universal_payload()
 
@@ -199,7 +197,6 @@ def test_universal_adapter_invalid_transaction_field() -> None:
         "currency": "USD",
         "scale": 2,
     }
-
 
     event = RawEvent(
         network_id="universal",

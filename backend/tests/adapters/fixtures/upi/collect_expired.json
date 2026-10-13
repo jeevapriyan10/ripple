@@ -1,0 +1,15 @@
+{
+  "txn_id": "UPI_TXN_004_EXPIRED",
+  "txn_type": "COLLECT",
+  "status": "EXPIRED",
+  "amount": "100.00",
+  "currency": "INR",
+  "collect_requested_at": "2026-10-13T10:15:00+05:30",
+  "channel": "mobile_app",
+  "payer": {
+    "vpa": "payer@oksbi"
+  },
+  "payee": {
+    "vpa": "payee@hdfc"
+  }
+}

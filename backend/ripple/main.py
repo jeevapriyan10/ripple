@@ -6,8 +6,10 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from ripple import __version__
 from ripple.adapters.registry import load_enabled_adapters
@@ -91,11 +93,35 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        """Sanitize validation errors so raw input payloads are never echoed back."""
+        errors: list[dict[str, Any]] = []
+        for err in exc.errors():
+            loc = err.get("loc", ())
+            field_name = ".".join(str(item) for item in loc if item != "body")
+            errors.append(
+                {
+                    "field": field_name or None,
+                    "reason": err.get("msg", "Validation error"),
+                }
+            )
+        first_err = errors[0] if errors else {"field": None, "reason": "Validation error"}
+        return JSONResponse(
+            status_code=422,
+            content={
+                "field": first_err["field"],
+                "reason": first_err["reason"],
+                "errors": errors,
+            },
+        )
+
     app.include_router(health_router)
     app.include_router(networks_router, prefix="/api/v1")
 
     return app
-
 
 
 # Default app instance for direct uvicorn invocations

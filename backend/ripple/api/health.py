@@ -60,10 +60,7 @@ async def ready(response: Response) -> dict[str, Any]:
                 name, check_status = result
                 dependencies[name] = check_status
                 if isinstance(check_status, dict):
-                    if (
-                        check_status.get("ready") is False
-                        or check_status.get("status") == "failed"
-                    ):
+                    if check_status.get("ready") is False or check_status.get("status") == "failed":
                         is_ready = False
                 elif check_status is False:
                     is_ready = False
@@ -79,4 +76,3 @@ async def ready(response: Response) -> dict[str, Any]:
         "status": "ready",
         "dependencies": dependencies,
     }
-

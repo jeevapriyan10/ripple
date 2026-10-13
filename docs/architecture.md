@@ -102,7 +102,8 @@ The adapter interface is defined as an abstract base class `NetworkAdapter` in `
 2. **`RawEvent`**: The immutable ingestion container carrying the raw native payload, its serialization format (`JSON`, `XML`, `ISO8583`, `FIXED_WIDTH`, `OTHER`), and the ingestion timestamp `received_at` (UTC).
 3. **`NormalizationResult`**: The frozen output container containing the universal `Transaction` aggregate, all deduplicated `Party` counterparty aggregates (including sender and receiver), the stable `correlation_key`, the `lifecycle_stage`, and the adapter release version.
 4. **`BatchResult`**: The output of `normalize_batch()`, isolating failures per event so that a single corrupt payload never terminates the ingestion stream for surrounding valid transactions.
-5. **`deterministic_uuid(network_id, *parts)`**: Generates stable UUIDv5 identifiers from a fixed Ripple namespace constant.
+5. **`from_settings(cls, settings) -> Self`**: A non-abstract classmethod factory hook on `NetworkAdapter`. Defaults to `return cls()`. Allows configurable adapters (such as `CardAdapter`) to receive typed application settings (e.g. HMAC keys) cleanly without reading global environment variables or breaking adapter purity.
+6. **`deterministic_uuid(network_id, *parts)`**: Generates stable UUIDv5 identifiers from a fixed Ripple namespace constant.
 
 ### The Four Adapter Invariant Rules
 
@@ -218,4 +219,23 @@ When Ripple starts up:
    ```bash
    ENABLED_NETWORKS=universal,fednow
    ```
+
+### Built-in Network Adapters (Module 4)
+
+Ripple includes built-in adapters for major payment rails, normalizing rail-specific lifecycles into the universal domain model:
+
+1. **UPI Instant-Payment Adapter (`upi`)**:
+   - **Rail Profile**: `INSTANT_PAYMENT`, `ALWAYS_ON`, Indian Rupee (`INR`), `Asia/Kolkata` operating timezone.
+   - **Supported Flows**: P2P/P2M `PAY` (push) and `COLLECT` (pull).
+   - **Lifecycle States**: `SUCCESS` &rarr; `SETTLED`, `PENDING` &rarr; `PENDING_SETTLEMENT` (or `PENDING_AUTHORIZATION` for unapproved collect requests), `DEEMED` &rarr; `PENDING_SETTLEMENT` (with `deemed: true` flag), `EXPIRED` &rarr; `CANCELLED`, `FAILURE` &rarr; `FAILED`.
+   - **Identity & Minimization**: Multi-identifier parties supporting VPA, IFSC bank account, and phone. Customer personal names are discarded for data minimization.
+   - **Documentation**: See [docs/adapters/upi.md](file:///e:/ongoing/ripple/docs/adapters/upi.md).
+
+2. **Card Network Adapter (`card`)**:
+   - **Rail Profile**: `CARD`, `AUTH_CAPTURE`, multi-currency support, 120-day reversal window, `BUSINESS_DAYS` clearing calendar.
+   - **Supported Flows**: Purchases (`00`), Cash Withdrawals (`01`), and Refunds (`20`).
+   - **Lifecycle States**: Multi-event lifecycle (`authorization` &rarr; `clearing` &rarr; `settlement` &rarr; `reversal` &rarr; `chargeback`) sharing a stable `correlation_key` (`"card:" + network_reference`).
+   - **PCI-DSS PAN Security**: Luhn checksum validation; HMAC-SHA256 irreversible tokenization; strict zero-PAN-leak policy across all outputs and exceptions.
+   - **Documentation**: See [docs/adapters/card.md](file:///e:/ongoing/ripple/docs/adapters/card.md).
+
 

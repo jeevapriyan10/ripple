@@ -4,6 +4,7 @@ This package provides the plug-in architecture for translating rail-native payme
 events into Ripple's universal domain model.
 """
 
+from ripple.adapters.card import CARD_PROFILE, CardAdapter
 from ripple.adapters.contract import (
     BatchResult,
     NetworkAdapter,
@@ -35,6 +36,7 @@ from ripple.adapters.registry import (
     register_adapter,
 )
 from ripple.adapters.universal import UniversalAdapter
+from ripple.adapters.upi import UPI_PROFILE, UpiAdapter
 
 __all__ = [
     # Profile
@@ -63,6 +65,10 @@ __all__ = [
     "register_adapter",
     "discover_plugins",
     "load_enabled_adapters",
-    # Universal Adapter
+    # Built-in Adapters
     "UniversalAdapter",
+    "UpiAdapter",
+    "UPI_PROFILE",
+    "CardAdapter",
+    "CARD_PROFILE",
 ]

@@ -1,7 +1,7 @@
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,7 +30,19 @@ class Settings(BaseSettings):
         "http://localhost:80",
     ]
     ENABLED_NETWORKS: str = "all"
+    CARD_PAN_TOKEN_KEY: str | None = None
+    ENABLE_ADAPTER_DRY_RUN: bool | None = None
 
+    @model_validator(mode="after")
+    def _resolve_dry_run_default(self) -> Self:
+        """Default ENABLE_ADAPTER_DRY_RUN to True in development, False otherwise."""
+        if self.ENABLE_ADAPTER_DRY_RUN is None:
+            object.__setattr__(
+                self,
+                "ENABLE_ADAPTER_DRY_RUN",
+                self.APP_ENV == "development",
+            )
+        return self
 
     @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
     @classmethod
@@ -40,6 +52,7 @@ class Settings(BaseSettings):
             if not value.strip():
                 return []
             return [origin.strip() for origin in value.split(",") if origin.strip()]
+        # pyrefly: ignore [implicit-any-type-argument]
         if isinstance(value, list | tuple | set):
             return [str(origin).strip() for origin in value if str(origin).strip()]
         return []

@@ -72,7 +72,6 @@ class UniversalAdapter(NetworkAdapter):
     )
     adapter_version: ClassVar[str] = "1.0.0"
 
-
     def can_handle(self, event: RawEvent) -> bool:
         """Verify event is targeted to 'universal' and payload contains a transaction dictionary."""
         return (
@@ -163,9 +162,7 @@ class UniversalAdapter(NetworkAdapter):
             except ValidationError as exc:
                 first_err = exc.errors()[0]
                 loc_str = ".".join(str(loc) for loc in first_err["loc"])
-                failing_field = (
-                    f"parties[{idx}].{loc_str}" if loc_str else f"parties[{idx}]"
-                )
+                failing_field = f"parties[{idx}].{loc_str}" if loc_str else f"parties[{idx}]"
                 raise NormalizationError(
                     f"Party validation failed at index {idx}: {first_err['msg']}",
                     field=failing_field,
@@ -200,8 +197,6 @@ class UniversalAdapter(NetworkAdapter):
                     "missing from parties list"
                 ),
             )
-
-
 
         correlation_key = f"universal:{transaction.transaction_id}"
         lifecycle_stage = transaction.status.value.lower()

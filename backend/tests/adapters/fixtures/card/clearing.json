@@ -1,0 +1,26 @@
+{
+  "event_type": "clearing",
+  "mti": "1240",
+  "network_reference": "NETREF_CARD_001_AUTH",
+  "processing_code": "00",
+  "pan": "4111111111111111",
+  "amount": "105.00",
+  "currency": "USD",
+  "transmission_time": "2026-10-14T02:00:00Z",
+  "acquirer": {
+    "id": "ACQ_101"
+  },
+  "scheme": "Visa",
+  "issuer": {
+    "id": "ISS_202",
+    "country": "US"
+  },
+  "merchant": {
+    "id": "MERC_555",
+    "name": "Acme Store",
+    "mcc": "5411",
+    "country": "US",
+    "city": "San Francisco"
+  },
+  "channel": "ecommerce"
+}

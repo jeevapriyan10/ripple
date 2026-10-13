@@ -1,0 +1,18 @@
+{
+  "txn_id": "UPI_TXN_003_COLLECT",
+  "txn_type": "COLLECT",
+  "status": "SUCCESS",
+  "response_code": "00",
+  "amount": "2000.00",
+  "currency": "INR",
+  "collect_requested_at": "2026-10-13T10:10:00+05:30",
+  "initiated_at": "2026-10-13T10:12:00+05:30",
+  "completed_at": "2026-10-13T10:12:03+05:30",
+  "channel": "mobile_app",
+  "payer": {
+    "vpa": "payer@oksbi"
+  },
+  "payee": {
+    "vpa": "payee@hdfc"
+  }
+}

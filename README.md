@@ -90,3 +90,17 @@ make logs
 # Stop and remove containers
 make down
 ```
+
+## Scope & Limitations
+
+### Real-World Rails vs. Documented JSON Payloads
+Real-world payment networks utilize proprietary or binary transport protocols that are either not freely published or require specialized cryptographic hardware:
+- **UPI (NPCI)**: Real NPCI wire communications are XML (ISO 20022 variants) passed over private MPLS/VPN networks with strict digital signature envelopes.
+- **Card Networks**: Real card clearing and authorization streams are encoded in binary bitmap-based ISO 8583 (1987/1993/2003) or ISO 20022 messages.
+
+To remain open, reproducible, and cloud-native, Ripple targets documented, simplified JSON payload specifications (**"Ripple UPI-style spec v1"** and **"Ripple card spec v1"**) that accurately model the publicly known semantics and lifecycle states of each rail. In a production enterprise deployment, a thin translation layer (e.g. an HSM ISO-bridge or an NPCI XML parser) sits immediately upstream of Ripple's network adapters to convert binary/XML feeds into Ripple's JSON specification.
+
+### Additional Known Boundaries
+- **Zero-Amount Authorizations**: Account-verification checks ($0.00 authorizations) cannot be modeled because the universal domain model strictly requires positive transaction amounts ($> 0$). These are explicitly rejected at adapter boundary.
+- **Entity Resolution**: An individual counterparty transacting across multiple identifiers (e.g., card token vs. VPA vs. phone) initially manifests as separate `Party` nodes. Multi-identifier persona linkage is resolved downstream by Module 8 (Mesh Entity Resolution).
+- **Institutional Hops as Super-Nodes**: In four-party card models, global payment schemes and major acquirers process millions of transactions, creating high-degree super-nodes in the transaction graph.

@@ -1,0 +1,32 @@
+{
+  "event_type": "authorization",
+  "mti": "0100",
+  "network_reference": "NETREF_CARD_001_AUTH",
+  "stan": "123456",
+  "auth_code": "AUTH99",
+  "response_code": "00",
+  "processing_code": "00",
+  "pan": "4111111111111111",
+  "amount": "100.00",
+  "currency": "USD",
+  "transmission_time": "2026-10-13T12:00:00Z",
+  "acquirer": {
+    "id": "ACQ_101"
+  },
+  "scheme": "Visa",
+  "issuer": {
+    "id": "ISS_202",
+    "country": "US"
+  },
+  "merchant": {
+    "id": "MERC_555",
+    "name": "Acme Store",
+    "mcc": "5411",
+    "country": "US",
+    "city": "San Francisco"
+  },
+  "channel": "ecommerce",
+  "card_present": false,
+  "three_ds": true,
+  "terminal_id": "TERM_01"
+}
