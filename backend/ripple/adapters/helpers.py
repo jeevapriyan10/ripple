@@ -5,13 +5,23 @@ fields, validating exact monetary amounts, and normalizing timestamps to timezon
 """
 
 import json
+import re
+from contextlib import ContextDecorator
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from pydantic import ValidationError
 
 from ripple.adapters.contract import RawEvent
 from ripple.adapters.errors import NormalizationError, UnsupportedPayloadError
+from ripple.domain.errors import (
+    CurrencyMismatchError,
+    InvalidIdentifierError,
+    InvalidTransactionError,
+    PrecisionError,
+)
 
 
 def payload_as_dict(event: RawEvent | Any) -> dict[str, Any]:
@@ -175,13 +185,61 @@ def parse_datetime(
     field: str = "datetime",
     assume_tz: str | None = None,
 ) -> tuple[datetime, str | None]:
-    """Parse an ISO-8601 string into a timezone-aware UTC datetime.
+    """Parse an ISO-8601 string, integer epoch, or datetime into UTC datetime.
+
+    Accepts:
+    - datetime instances
+    - ISO-8601 formatted strings
+    - Integer epoch seconds (e.g. 1728864000)
+
+    Rejects:
+    - Booleans (bool is a subclass of int in Python)
+    - Floating point numbers
+    - Negative epoch values
+    - Absurd epoch values (e.g. beyond year 9999)
 
     If the value is naive and assume_tz is provided, interprets it in that IANA
     timezone, converts to UTC, and returns a warning string.
     If the value is naive and assume_tz is None, raises NormalizationError.
     Returns (utc_datetime, warning_or_none).
     """
+    if isinstance(value, bool):
+        raise NormalizationError(
+            f"Timestamp field '{field}' cannot be a boolean.",
+            field=field,
+            reason=f"Boolean timestamp in '{field}'",
+        )
+
+    if isinstance(value, float):
+        raise NormalizationError(
+            f"Timestamp field '{field}' must not be a float. "
+            "Please supply integer epoch seconds or ISO-8601 string.",
+            field=field,
+            reason=f"Float timestamp in '{field}'",
+        )
+
+    if isinstance(value, int):
+        if value < 0:
+            raise NormalizationError(
+                f"Timestamp field '{field}' cannot be negative, got {value}.",
+                field=field,
+                reason=f"Negative timestamp in '{field}'",
+            )
+        if value > 253402300799:  # 9999-12-31 23:59:59 UTC
+            raise NormalizationError(
+                f"Timestamp field '{field}' contains absurd epoch value {value}.",
+                field=field,
+                reason=f"Absurd timestamp in '{field}'",
+            )
+        try:
+            return datetime.fromtimestamp(value, tz=UTC), None
+        except (OverflowError, OSError, ValueError) as exc:
+            raise NormalizationError(
+                f"Timestamp field '{field}' contains invalid epoch value: {exc}",
+                field=field,
+                reason=f"Invalid epoch timestamp in '{field}'",
+            ) from exc
+
     if isinstance(value, datetime):
         dt = value
     elif isinstance(value, str):
@@ -202,8 +260,8 @@ def parse_datetime(
             ) from exc
     else:
         raise NormalizationError(
-            f"Timestamp field '{field}' must be an ISO-8601 string or datetime, "
-            f"got {type(value).__name__}.",
+            f"Timestamp field '{field}' must be an ISO-8601 string, integer epoch seconds, "
+            f"or datetime, got {type(value).__name__}.",
             field=field,
             reason=f"Invalid timestamp type in '{field}'",
         )
@@ -232,3 +290,91 @@ def parse_datetime(
         return aware_dt, warning
 
     return dt.astimezone(UTC), None
+
+
+class wrap_domain_errors(ContextDecorator):
+    """Context manager / decorator catching domain validation errors as NormalizationError.
+
+    Ensures that domain validation errors (InvalidTransactionError, InvalidIdentifierError,
+    PrecisionError, CurrencyMismatchError, and Pydantic ValidationError) raised while
+    constructing universal domain models are translated into typed NormalizationError(field, reason)
+    WITHOUT echoing submitted sensitive values (e.g. IBANs, accounts, card numbers, addresses).
+    """
+
+    def __init__(self, default_field: str = "transaction") -> None:
+        self.default_field = default_field
+
+    def __enter__(self) -> "wrap_domain_errors":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+        if exc_val is None:
+            return False
+
+        if isinstance(exc_val, (NormalizationError, UnsupportedPayloadError)):
+            return False
+
+        if isinstance(
+            exc_val,
+            (
+                InvalidTransactionError,
+                InvalidIdentifierError,
+                PrecisionError,
+                CurrencyMismatchError,
+                ValidationError,
+            ),
+        ):
+            field = self.default_field
+            reason = "Domain invariant validation failed."
+
+            if isinstance(exc_val, ValidationError):
+                errors = exc_val.errors()
+                if errors:
+                    err = errors[0]
+                    loc_parts = err.get("loc", ())
+                    if loc_parts:
+                        field = ".".join(str(p) for p in loc_parts)
+                    reason = err.get("msg", "Validation failed")
+                else:
+                    reason = "Validation failed"
+            elif isinstance(exc_val, InvalidIdentifierError):
+                field = "identifier"
+                raw_msg = str(exc_val)
+                sanitized_msg = re.sub(r"'[^']*'", "<redacted>", raw_msg)
+                sanitized_msg = re.sub(r'"[^"]*"', "<redacted>", sanitized_msg)
+                if "IBAN" in raw_msg:
+                    field = "iban"
+                    reason = "Invalid IBAN: fails structure or checksum"
+                elif "BIC" in raw_msg:
+                    field = "bic"
+                    reason = "Invalid BIC/SWIFT code structure"
+                elif "Crypto" in raw_msg:
+                    field = "address"
+                    reason = "Invalid crypto address structure"
+                else:
+                    reason = sanitized_msg
+            elif isinstance(exc_val, InvalidTransactionError):
+                raw_msg = str(exc_val)
+                sanitized_msg = re.sub(r"'[^']*'", "<redacted>", raw_msg)
+                sanitized_msg = re.sub(r'"[^"]*"', "<redacted>", sanitized_msg)
+                if "settled_at" in raw_msg:
+                    field = "settled_at"
+                elif "amount" in raw_msg:
+                    field = "amount"
+                elif "sender" in raw_msg.lower() or "receiver" in raw_msg.lower():
+                    field = "counterparty"
+                reason = sanitized_msg
+            elif isinstance(exc_val, PrecisionError):
+                field = "amount"
+                reason = "Amount precision exceeds allowed scale or contains float"
+            elif isinstance(exc_val, CurrencyMismatchError):
+                field = "currency"
+                reason = "Currency mismatch between amounts"
+
+            raise NormalizationError(
+                f"Domain validation failed for field '{field}': {reason}",
+                field=field,
+                reason=reason,
+            ) from exc_val
+
+        return False

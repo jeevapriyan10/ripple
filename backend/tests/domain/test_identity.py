@@ -178,3 +178,49 @@ def test_identifier_normalization_and_deduplication() -> None:
         network="ETHEREUM",
     )
     assert crypto_ident.normalize() == "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
+
+
+def test_crypto_address_case_sensitivity_normalization() -> None:
+    """Assert base58 addresses preserve case while EVM hex and bech32 lowercase."""
+    # EVM: differing only in case normalizes to SAME value
+    evm1 = PartyIdentifier(
+        type=IdentifierType.CRYPTO_ADDRESS,
+        value="0x111122223333444455556666777788889999AaBb",
+        network="ETHEREUM",
+    )
+    evm2 = PartyIdentifier(
+        type=IdentifierType.CRYPTO_ADDRESS,
+        value="0x111122223333444455556666777788889999AABB",
+        network="ETHEREUM",
+    )
+    assert evm1.normalize() == evm2.normalize()
+    assert evm1.normalize() == "0x111122223333444455556666777788889999aabb"
+
+    # Base58 (Solana / Bitcoin legacy / Tron): differing only in case normalizes to DIFFERENT values
+    sol1 = PartyIdentifier(
+        type=IdentifierType.CRYPTO_ADDRESS,
+        value="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        network="SOLANA",
+    )
+    sol2 = PartyIdentifier(
+        type=IdentifierType.CRYPTO_ADDRESS,
+        value="tokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        network="SOLANA",
+    )
+    assert sol1.normalize() != sol2.normalize()
+    assert sol1.normalize() == "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    assert sol2.normalize() == "tokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+
+    # Bech32 (Bitcoin bc1): case-insensitive, normalizes to lowercase
+    bech1 = PartyIdentifier(
+        type=IdentifierType.CRYPTO_ADDRESS,
+        value="bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
+        network="BITCOIN",
+    )
+    bech2 = PartyIdentifier(
+        type=IdentifierType.CRYPTO_ADDRESS,
+        value="BC1QAR0SRRR7XFKVY5L643LYDNW9RE59GTZZWF5MDQ",
+        network="BITCOIN",
+    )
+    assert bech1.normalize() == bech2.normalize()
+    assert bech1.normalize() == "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"

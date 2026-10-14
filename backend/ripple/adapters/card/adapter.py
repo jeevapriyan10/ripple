@@ -15,6 +15,7 @@ from ripple.adapters.contract import (
     RawEvent,
     deterministic_uuid,
 )
+from ripple.adapters.currencies import resolve_currency
 from ripple.adapters.errors import (
     AdapterRegistrationError,
     NormalizationError,
@@ -41,21 +42,6 @@ from ripple.domain.transaction import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Numeric to ISO alpha-3 currency mapping and native decimal scales
-_NUMERIC_CURRENCY_TABLE: dict[str, tuple[str, int]] = {
-    "840": ("USD", 2),
-    "978": ("EUR", 2),
-    "826": ("GBP", 2),
-    "356": ("INR", 2),
-    "392": ("JPY", 0),
-    "036": ("AUD", 2),
-    "36": ("AUD", 2),
-    "124": ("CAD", 2),
-    "756": ("CHF", 2),
-    "702": ("SGD", 2),
-    "784": ("AED", 2),
-}
 
 _ALLOWED_EVENT_TYPES = {
     "authorization",
@@ -471,21 +457,7 @@ class CardAdapter(NetworkAdapter):
 
     def _resolve_currency(self, raw_curr: Any) -> tuple[str, int]:
         """Resolve alpha-3 or numeric currency code and determine decimal scale."""
-        clean_curr = str(raw_curr).strip()
-        if clean_curr in _NUMERIC_CURRENCY_TABLE:
-            return _NUMERIC_CURRENCY_TABLE[clean_curr]
-
-        clean_upper = clean_curr.upper()
-        # Alpha-3 match
-        if len(clean_upper) == 3 and clean_upper.isalpha():
-            scale = 0 if clean_upper == "JPY" else 2
-            return clean_upper, scale
-
-        raise NormalizationError(
-            f"Unknown or unsupported card currency code '{raw_curr}'.",
-            field="currency",
-            reason=f"Unknown currency '{raw_curr}'",
-        )
+        return resolve_currency(raw_curr)
 
     def _resolve_card_token(
         self,

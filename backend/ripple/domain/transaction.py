@@ -95,6 +95,8 @@ class IntermediaryRole(str, Enum):
     ISSUER: Payer's card-issuing bank holding the account credit/debit facility.
     SCHEME: Card network operator switch (Visa, Mastercard, RuPay, Amex).
     CORRESPONDENT_BANK: Intermediate clearing bank in cross-border correspondent chains.
+    DEBTOR_AGENT: Debtor's financial institution / servicing bank in correspondent banking.
+    CREDITOR_AGENT: Creditor's financial institution / receiving bank in correspondent banking.
     PSP: Payment Service Provider or switch initiating or aggregating the transaction.
     VALIDATOR: Blockchain consensus node, miner, or sequencer confirming the transaction.
     EXCHANGE: Custodial off-ramp / on-ramp or OTC liquidity provider bridging assets.
@@ -105,6 +107,8 @@ class IntermediaryRole(str, Enum):
     ISSUER = "ISSUER"
     SCHEME = "SCHEME"
     CORRESPONDENT_BANK = "CORRESPONDENT_BANK"
+    DEBTOR_AGENT = "DEBTOR_AGENT"
+    CREDITOR_AGENT = "CREDITOR_AGENT"
     PSP = "PSP"
     VALIDATOR = "VALIDATOR"
     EXCHANGE = "EXCHANGE"

@@ -44,6 +44,8 @@ def test_list_networks_endpoint(client: TestClient) -> None:
     assert "universal" in network_ids
     assert "upi" in network_ids
     assert "card" in network_ids
+    assert "crypto" in network_ids
+    assert "swift" in network_ids
 
 
 def test_get_network_detail_success(client: TestClient) -> None:
@@ -133,6 +135,82 @@ def test_dry_run_normalize_malformed_payload_with_pan_never_leaks_pan(
     data = response.json()
     assert "field" in data
     assert "reason" in data
+
+
+def test_dry_run_normalize_crypto_success(client: TestClient) -> None:
+    """Assert POST /api/v1/networks/crypto/normalize returns 200 with NormalizationResult."""
+    with open(FIXTURES_DIR / "crypto" / "transfer_finalized.json", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    response = client.post(
+        "/api/v1/networks/crypto/normalize",
+        json={"payload": payload, "payload_format": "JSON"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "transaction" in data
+    assert data["transaction"]["network"] == "CRYPTO"
+    assert data["transaction"]["status"] == "CONFIRMED"
+    assert "crypto:ethereum" in data["correlation_key"]
+
+
+def test_dry_run_normalize_swift_success(client: TestClient) -> None:
+    """Assert POST /api/v1/networks/swift/normalize returns 200 with NormalizationResult."""
+    with open(FIXTURES_DIR / "swift" / "payment_instruction.json", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    response = client.post(
+        "/api/v1/networks/swift/normalize",
+        json={"payload": payload, "payload_format": "JSON"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "transaction" in data
+    assert data["transaction"]["network"] == "SWIFT"
+    assert data["transaction"]["status"] == "INITIATED"
+    assert data["correlation_key"] == "swift:eb92b1a0-1234-4567-89ab-cdef01234567"
+
+
+def test_dry_run_normalize_malformed_swift_payload_never_leaks_iban(client: TestClient) -> None:
+    """Assert malformed SWIFT payload with invalid IBAN returns 422 without leaking IBAN."""
+    invalid_iban = "DE89370400440532013099"  # Checksum corrupt
+    with open(FIXTURES_DIR / "swift" / "payment_instruction.json", encoding="utf-8") as f:
+        payload = json.load(f)
+    payload["debtor"]["account"]["iban"] = invalid_iban
+
+    response = client.post(
+        "/api/v1/networks/swift/normalize",
+        json={"payload": payload, "payload_format": "JSON"},
+    )
+    assert response.status_code == 422
+    body_text = response.text
+
+    assert invalid_iban not in body_text
+    data = response.json()
+    assert "field" in data
+    assert "reason" in data
+
+
+def test_enabled_networks_loads_crypto_and_swift_only() -> None:
+    """Assert ENABLED_NETWORKS='crypto,swift' loads only those two networks."""
+    registry = get_registry()
+    registry.clear()
+
+    settings = Settings(
+        APP_ENV="development",
+        ENABLED_NETWORKS="crypto,swift",
+    )
+    load_enabled_adapters(settings=settings, registry=registry)
+
+    loaded_ids = registry.network_ids()
+    assert loaded_ids == ["crypto", "swift"]
+    assert registry.has("crypto")
+    assert registry.has("swift")
+    assert not registry.has("upi")
+    assert not registry.has("card")
+    assert not registry.has("universal")
 
 
 def test_dry_run_normalize_unknown_network_returns_404(client: TestClient) -> None:
