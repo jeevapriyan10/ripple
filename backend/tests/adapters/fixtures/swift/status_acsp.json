@@ -1,0 +1,32 @@
+{
+  "event_type": "status",
+  "uetr": "eb92b1a0-1234-4567-89ab-cdef01234567",
+  "status": "ACSP",
+  "status_timestamp": "2026-10-14T09:35:00Z",
+  "settlement_amount": {
+    "amount": "50000.00",
+    "currency": "EUR"
+  },
+  "debtor": {
+    "account": {
+      "iban": "DE89370400440532013000"
+    }
+  },
+  "creditor": {
+    "account": {
+      "iban": "GB82WEST12345698765432"
+    }
+  },
+  "debtor_agent": {
+    "bic": "COBADEFF"
+  },
+  "creditor_agent": {
+    "bic": "WESTGB2L"
+  },
+  "intermediaries": [
+    {
+      "bic": "CHASUS33",
+      "received_at": "2026-10-14T09:30:00Z"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "chain": "ethereum",
+  "tx_hash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "transfer_index": 0,
+  "status": "included",
+  "execution_status": "reverted",
+  "from_address": "0x1111111111111111111111111111111111111111",
+  "to_address": "0x2222222222222222222222222222222222222222",
+  "asset": {
+    "type": "native",
+    "symbol": "ETH",
+    "decimals": 18
+  },
+  "amount": "1.000000000000000000",
+  "fee": {
+    "amount": "0.000850000000000000",
+    "symbol": "ETH"
+  },
+  "block_number": 21000010,
+  "block_time": "2026-10-14T08:10:00Z",
+  "confirmations": 10
+}

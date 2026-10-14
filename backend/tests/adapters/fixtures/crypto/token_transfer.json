@@ -1,0 +1,25 @@
+{
+  "chain": "ethereum",
+  "tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "transfer_index": 1,
+  "status": "included",
+  "execution_status": "success",
+  "from_address": "0x4444444444444444444444444444444444444444",
+  "to_address": "0x5555555555555555555555555555555555555555",
+  "asset": {
+    "type": "token",
+    "symbol": "USDC",
+    "decimals": 6,
+    "contract_address": "0x3333333333333333333333333333333333333333"
+  },
+  "amount": "250.750000",
+  "fee": {
+    "amount": "0.001500000000000000",
+    "symbol": "ETH"
+  },
+  "block_number": 21000005,
+  "block_time": "2026-10-14T08:05:00Z",
+  "confirmations": 100,
+  "finalized": true,
+  "token_standard": "ERC-20"
+}
