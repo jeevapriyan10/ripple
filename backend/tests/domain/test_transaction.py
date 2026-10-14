@@ -351,3 +351,25 @@ def test_multi_hop_correspondent_transaction() -> None:
     assert tx.intermediary_hops[0].fee.amount == Decimal("25.00")
     assert tx.intermediary_hops[1].fee is not None
     assert tx.intermediary_hops[1].fee.amount == Decimal("15.00")
+
+
+def test_intermediary_hop_agent_roles() -> None:
+    """Assert DEBTOR_AGENT and CREDITOR_AGENT roles can be instantiated and used in hops."""
+    debtor_agent_bic = PartyIdentifier(type=IdentifierType.BIC, value="DEUTDEDD", network="SWIFT")
+    creditor_agent_bic = PartyIdentifier(type=IdentifierType.BIC, value="BNPAFRPP", network="SWIFT")
+
+    hop_debtor = IntermediaryHop(
+        sequence=1,
+        institution_identifier=debtor_agent_bic,
+        role=IntermediaryRole.DEBTOR_AGENT,
+    )
+    hop_creditor = IntermediaryHop(
+        sequence=2,
+        institution_identifier=creditor_agent_bic,
+        role=IntermediaryRole.CREDITOR_AGENT,
+    )
+
+    assert hop_debtor.role == IntermediaryRole.DEBTOR_AGENT
+    assert hop_creditor.role == IntermediaryRole.CREDITOR_AGENT
+    assert IntermediaryRole.DEBTOR_AGENT.value == "DEBTOR_AGENT"
+    assert IntermediaryRole.CREDITOR_AGENT.value == "CREDITOR_AGENT"

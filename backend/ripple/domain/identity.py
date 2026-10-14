@@ -202,7 +202,8 @@ class PartyIdentifier(BaseModel):
         - EMAIL, VPA: Trimmed and lowercased.
         - IBAN, BIC: Trimmed, spaces removed, uppercased.
         - PHONE: Strip formatting chars (dashes, spaces, parentheses).
-        - CRYPTO_ADDRESS: Trimmed; hexadecimal (0x) addresses lowercased.
+        - CRYPTO_ADDRESS: Trimmed; 0x-prefixed hex and bech32 (bc1) addresses lowercased;
+          case-sensitive base58 (Bitcoin legacy, Solana, Tron) preserved exactly.
         - Other: Trimmed.
         """
         raw = self.value.strip()
@@ -216,7 +217,7 @@ class PartyIdentifier(BaseModel):
                 digits_only = re.sub(r"\D", "", raw)
                 return f"+{digits_only}" if has_plus else digits_only
             case IdentifierType.CRYPTO_ADDRESS:
-                if raw.startswith("0x") or raw.startswith("0X"):
+                if raw.startswith(("0x", "0X")) or raw.lower().startswith("bc1"):
                     return raw.lower()
                 return raw
             case _:
