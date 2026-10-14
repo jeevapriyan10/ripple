@@ -18,7 +18,7 @@ The `ripple.domain` package encapsulates the universal, network-agnostic data mo
 | **`Party`** | `ripple.domain.party` | Aggregate Root (Graph Node) | Mutable | Economic entity owning one or more identifiers across rails. Retains risk flags, KYC tiers, and ground-truth mule labels (`is_mule`, `mule_role`). |
 | **`RiskFlags`** | `ripple.domain.party` | Value Object | `frozen=True` | Intrinsic static compliance attributes (account incubation age, KYC tier, sanction hit, high-risk jurisdiction). |
 | **`Transaction`** | `ripple.domain.transaction` | Aggregate Root (Graph Edge) | Mutable | Universal payment transaction capturing identity, parties, amount, timestamps (UTC), lifecycle status, settlement model, and routing waypoints. |
-| **`IntermediaryHop`** | `ripple.domain.transaction` | Value Object | `frozen=True` | Institutional waypoint along a multi-hop routing path (acquirer, scheme, correspondent bank, PSP), recording sequence, role, timestamp, and fees. |
+| **`IntermediaryHop`** | `ripple.domain.transaction` | Value Object | `frozen=True` | Institutional waypoint along a multi-hop routing path (acquirer, scheme, correspondent bank, debtor agent, creditor agent, PSP), recording sequence, role, timestamp, and fees. |
 | **`GraphNode`** | `ripple.domain.graph` | Projection | `frozen=True` | Storage-agnostic projection of entities and institutions into graph nodes (`PARTY` or `INSTITUTION`). |
 | **`GraphEdge`** | `ripple.domain.graph` | Projection | `frozen=True` | Storage-agnostic projection of direct transfers (`TRANSACTION`), routing segments (`ROUTED_THROUGH`), or identity ownership (`OWNS_IDENTIFIER`). |
 | **`TransactionSubgraph`** | `ripple.domain.graph` | Projection Container | `frozen=True` | Neighborhood container holding nodes and edges surrounding a center node for k-hop subgraph analysis (used by Chain and Watch). |
@@ -30,13 +30,13 @@ The `ripple.domain` package encapsulates the universal, network-agnostic data mo
 
 Payment networks have evolved distinct protocols, clearing mechanisms, and counterparty addressing standards. The table below illustrates how the five core payment archetypes normalize into the universal schema:
 
-| Network Archetype | Example Rails | Primary Identifier Types | Settlement Model | Intermediary Hops | Reversible? | Typology & Fraud Risks |
+| Network Archetype | Adapter ID | Primary Identifier Types | Settlement Model | Intermediary Hops | Reversible? | Typology & Fraud Risks |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Instant Payments** | UPI, Pix, FedNow, SEPA Instant | `VPA`, `PHONE`, `BANK_ACCOUNT` | `INSTANT` | None (Direct) | No (`is_reversible=False`) | Rapid fan-out mule dispersion within seconds; APP (Authorized Push Payment) scams. |
-| **2. Card Networks** | Visa, Mastercard, Amex, RuPay | `CARD_PAN_TOKEN`, `MERCHANT_ID` | `AUTH_CAPTURE` | Yes (`ACQUIRER` $\rightarrow$ `SCHEME` $\rightarrow$ `ISSUER`) | Yes (`is_reversible=True`, 60–120 day window) | Account takeover, card testing, stolen credentials, chargeback / friendly fraud. |
-| **3. Cryptocurrency** | Bitcoin, Ethereum, Solana, Polygon | `CRYPTO_ADDRESS` (pseudonymous) | `BLOCK_CONFIRMATION` | None (P2P on-chain / `VALIDATOR`) | No (`is_reversible=False`) | Rapid peel-chains, unhosted wallet layering, mixing services, off-ramp cash-outs. |
-| **4. Correspondent Banking** | SWIFT cross-border wires (MT103 / ISO 20022) | `IBAN`, `BIC`, `BANK_ACCOUNT` | `CORRESPONDENT_CHAIN` | Yes (1 to 4 `CORRESPONDENT_BANK` waypoints) | Conditional (`is_reversible=True` via recall before credit) | Cross-border trade-based laundering, sanctions evasion, multi-day delay exploitation. |
-| **5. Closed-Loop Wallets** | PayPal, Venmo, Alipay, GrabPay | `WALLET_USER_ID`, `EMAIL`, `PHONE` | `INTERNAL_LEDGER` | None (Atomic ledger update) | Yes (`is_reversible=True` via platform dispute) | Account takeovers, peer-to-peer layering, internal balance draining. |
+| **1. Instant Payments** | `upi` | `VPA`, `PHONE`, `BANK_ACCOUNT` | `INSTANT` | None (Direct) | No (`is_reversible=False`) | Rapid fan-out mule dispersion within seconds; APP (Authorized Push Payment) scams. |
+| **2. Card Networks** | `card` | `CARD_PAN_TOKEN`, `MERCHANT_ID` | `DEFERRED_NET` | Yes (`ISSUER` $\rightarrow$ `SCHEME` $\rightarrow$ `ACQUIRER`) | Yes (`is_reversible=True`, 120-day window) | Account takeover, card testing, stolen credentials, chargeback / friendly fraud. |
+| **3. Cryptocurrency** | `crypto` | `CRYPTO_ADDRESS` (EVM, Bitcoin, Solana, Tron) | `BLOCK_CONFIRMATION` | None (P2P on-chain) | No (`is_reversible=False`) | Rapid peel-chains, unhosted wallet layering, mixing services, off-ramp cash-outs. |
+| **4. Correspondent Banking** | `swift` | `IBAN`, `BIC`, `BANK_ACCOUNT` | `CORRESPONDENT_CHAIN` | Yes (`DEBTOR_AGENT` $\rightarrow$ `CORRESPONDENT_BANK` $\rightarrow$ `CREDITOR_AGENT`) | No (`is_reversible=False`; recalls require cooperative consent) | Cross-border trade-based laundering, sanctions evasion, multi-day delay exploitation. |
+| **5. Closed-Loop Wallets** | *(M06)* | `WALLET_USER_ID`, `EMAIL`, `PHONE` | `INTERNAL_LEDGER` | None (Atomic ledger update) | Yes (`is_reversible=True` via platform dispute) | Account takeovers, peer-to-peer layering, internal balance draining. |
 
 ---
 
@@ -220,7 +220,7 @@ When Ripple starts up:
    ENABLED_NETWORKS=universal,fednow
    ```
 
-### Built-in Network Adapters (Module 4)
+### Built-in Network Adapters (Modules 4 & 5)
 
 Ripple includes built-in adapters for major payment rails, normalizing rail-specific lifecycles into the universal domain model:
 
@@ -229,13 +229,37 @@ Ripple includes built-in adapters for major payment rails, normalizing rail-spec
    - **Supported Flows**: P2P/P2M `PAY` (push) and `COLLECT` (pull).
    - **Lifecycle States**: `SUCCESS` &rarr; `SETTLED`, `PENDING` &rarr; `PENDING_SETTLEMENT` (or `PENDING_AUTHORIZATION` for unapproved collect requests), `DEEMED` &rarr; `PENDING_SETTLEMENT` (with `deemed: true` flag), `EXPIRED` &rarr; `CANCELLED`, `FAILURE` &rarr; `FAILED`.
    - **Identity & Minimization**: Multi-identifier parties supporting VPA, IFSC bank account, and phone. Customer personal names are discarded for data minimization.
-   - **Documentation**: See [docs/adapters/upi.md](file:///e:/ongoing/ripple/docs/adapters/upi.md).
+   - **Documentation**: See [docs/adapters/upi.md](file:///docs/adapters/upi.md).
 
 2. **Card Network Adapter (`card`)**:
    - **Rail Profile**: `CARD`, `AUTH_CAPTURE`, multi-currency support, 120-day reversal window, `BUSINESS_DAYS` clearing calendar.
    - **Supported Flows**: Purchases (`00`), Cash Withdrawals (`01`), and Refunds (`20`).
    - **Lifecycle States**: Multi-event lifecycle (`authorization` &rarr; `clearing` &rarr; `settlement` &rarr; `reversal` &rarr; `chargeback`) sharing a stable `correlation_key` (`"card:" + network_reference`).
    - **PCI-DSS PAN Security**: Luhn checksum validation; HMAC-SHA256 irreversible tokenization; strict zero-PAN-leak policy across all outputs and exceptions.
-   - **Documentation**: See [docs/adapters/card.md](file:///e:/ongoing/ripple/docs/adapters/card.md).
+   - **Documentation**: See [docs/adapters/card.md](file:///docs/adapters/card.md).
+
+3. **Cryptocurrency Adapter (`crypto`)**:
+   - **Rail Profile**: `CRYPTO`, `BLOCK_CONFIRMATION`, multi-chain (EVM, Bitcoin, Solana, Tron, custom), `ALWAYS_ON`, public ledger visibility, pseudonymous.
+   - **Supported Flows**: Native transfers and token smart contract transfers (ERC-20, SPL, TRC-20).
+   - **Lifecycle States**: `pending` (mempool) &rarr; `included` (confirming) &rarr; `included` (`finalized` / threshold reached &rarr; `CONFIRMED`), `failed` / reverted, `dropped`, `replaced` (RBF), `reorged`.
+   - **Identity & Minimization**: Single `CRYPTO_ADDRESS` per (address family, normalized address). Case-sensitive base58 (Bitcoin legacy, Solana, Tron) is preserved; case-insensitive EVM `0x` and `bc1` bech32 are lowercased.
+   - **Documentation**: See [docs/adapters/crypto.md](file:///docs/adapters/crypto.md).
+
+4. **SWIFT Correspondent Banking Adapter (`swift`)**:
+   - **Rail Profile**: `WIRE`, `CORRESPONDENT_CHAIN`, multi-currency fiat, `BUSINESS_DAYS`, private ledger, intermediaries visible.
+   - **Supported Flows**: Customer credit transfers (pacs.008 / MT103 concepts), status events (gpi tracking), recall requests (FRAD, DUPL, TECH, CUST), and returns.
+   - **Lifecycle States**: `payment` (`instruction` &rarr; `INITIATED`), `ACTC` &rarr; `PENDING_AUTHORIZATION`, `ACSP`/`ACSC`/`PDNG` &rarr; `PENDING_SETTLEMENT`, `ACCC` &rarr; `SETTLED`, `RJCT` &rarr; `REJECTED`, `recall_request` &rarr; `DISPUTED`, `return` &rarr; `REVERSED`.
+   - **Hops & Intermediaries**: Sequenced in funds-flow order: `DEBTOR_AGENT` (seq 1) &rarr; `CORRESPONDENT_BANK` (seq 2..N) &rarr; `CREDITOR_AGENT` (seq N+1).
+   - **Strict IBAN Security & Minimization**: MOD-97 checksum validation; zero-IBAN-leak guarantee in all logs, warnings, and error responses; customer personal names, physical addresses, and remittance narratives are discarded.
+   - **Documentation**: See [docs/adapters/swift.md](file:///docs/adapters/swift.md).
+
+---
+
+### Shared Normalization Infrastructure
+
+- **Shared ISO-4217 Currency Table (`ripple.adapters.currencies`)**: Centralized lookup for 35+ major world currencies with scale, numeric codes, and `resolve_currency` validation.
+- **Timestamp Normalization (`parse_datetime`)**: Parses ISO-8601 strings and integer epoch seconds into timezone-aware UTC, rejecting floats, booleans, and negative values.
+- **Domain Exception Sanitization (`wrap_domain_errors`)**: Catches domain validation exceptions during entity construction and translates them into typed `NormalizationError` without echoing raw submitted account numbers or sensitive credentials.
+
 
 
