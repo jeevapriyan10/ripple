@@ -13,6 +13,7 @@ from ripple.adapters.contract import (
     RawEvent,
     deterministic_uuid,
 )
+from ripple.adapters.crypto import CRYPTO_PROFILE, CryptoAdapter
 from ripple.adapters.errors import (
     AdapterError,
     AdapterRegistrationError,
@@ -35,6 +36,7 @@ from ripple.adapters.registry import (
     load_enabled_adapters,
     register_adapter,
 )
+from ripple.adapters.swift import SWIFT_PROFILE, SwiftAdapter
 from ripple.adapters.universal import UniversalAdapter
 from ripple.adapters.upi import UPI_PROFILE, UpiAdapter
 
@@ -71,4 +73,8 @@ __all__ = [
     "UPI_PROFILE",
     "CardAdapter",
     "CARD_PROFILE",
+    "CryptoAdapter",
+    "CRYPTO_PROFILE",
+    "SwiftAdapter",
+    "SWIFT_PROFILE",
 ]

@@ -291,6 +291,22 @@ def load_enabled_adapters(
         logger.error("Failed to register built-in card adapter: %s", exc)
         reg._failed_registrations["card"] = str(exc)
 
+    try:
+        from ripple.adapters.crypto import CryptoAdapter
+
+        reg.register(CryptoAdapter, replace=True, settings=cfg)
+    except Exception as exc:
+        logger.error("Failed to register built-in crypto adapter: %s", exc)
+        reg._failed_registrations["crypto"] = str(exc)
+
+    try:
+        from ripple.adapters.swift import SwiftAdapter
+
+        reg.register(SwiftAdapter, replace=True, settings=cfg)
+    except Exception as exc:
+        logger.error("Failed to register built-in swift adapter: %s", exc)
+        reg._failed_registrations["swift"] = str(exc)
+
     # 2. Run external plugin discovery
     discover_plugins(registry=reg)
 
