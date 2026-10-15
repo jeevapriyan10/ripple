@@ -1,5 +1,6 @@
 """Unit tests for Cryptocurrency network adapter (backend/ripple/adapters/crypto/)."""
 
+import copy
 import json
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -413,3 +414,266 @@ def test_crypto_determinism_on_repeated_calls() -> None:
     assert len(res1.parties) == len(res2.parties)
     for p1, p2 in zip(res1.parties, res2.parties, strict=True):
         assert p1.party_id == p2.party_id
+
+
+def test_crypto_nft_erc721_transfer() -> None:
+    """Assert ERC-721 NFT transfer normalizes with quantity 1, scale 0, and token_id in asset_id."""
+    adapter = CryptoAdapter()
+    payload = {
+        "chain": "ethereum",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transfer_index": 0,
+        "status": "included",
+        "confirmations": 20,
+        "finalized": True,
+        "from_address": "0x1111111111111111111111111111111111111111",
+        "to_address": "0x2222222222222222222222222222222222222222",
+        "asset": {
+            "type": "nft",
+            "contract_address": "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D",
+            "token_id": "42",
+            "symbol": "BAYC",
+        },
+        "token_standard": "erc721",
+        "quantity": "1",
+        "block_time": "2026-10-14T08:00:00Z",
+    }
+    res = adapter.normalize(make_raw_event(payload))
+    tx = res.transaction
+
+    assert tx.amount.amount == Decimal("1")
+    assert tx.amount.scale == 0
+    assert tx.amount.currency == "BAYC"
+    assert (
+        tx.network_metadata["asset_id"] == "ethereum:0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d:42"
+    )
+    assert tx.network_metadata["token_id"] == "42"
+    assert tx.network_metadata["token_standard"] == "erc721"
+
+
+def test_crypto_nft_erc1155_quantity_5() -> None:
+    """Assert ERC-1155 multi-token transfer normalizes with quantity 5."""
+    adapter = CryptoAdapter()
+    payload = {
+        "chain": "ethereum",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transfer_index": 0,
+        "status": "included",
+        "confirmations": 20,
+        "finalized": True,
+        "from_address": "0x1111111111111111111111111111111111111111",
+        "to_address": "0x2222222222222222222222222222222222222222",
+        "asset": {
+            "type": "nft",
+            "contract_address": "0x3333333333333333333333333333333333333333",
+            "token_id": "999",
+            "symbol": "ITEMS",
+        },
+        "token_standard": "erc1155",
+        "quantity": "5",
+        "block_time": "2026-10-14T08:00:00Z",
+    }
+    res = adapter.normalize(make_raw_event(payload))
+    tx = res.transaction
+
+    assert tx.amount.amount == Decimal("5")
+    assert tx.amount.scale == 0
+    assert tx.amount.currency == "ITEMS"
+    assert tx.network_metadata["token_id"] == "999"
+
+
+def test_crypto_nft_different_token_ids_yield_different_asset_ids() -> None:
+    """Assert two different token_ids in the same collection yield different asset_ids."""
+    adapter = CryptoAdapter()
+    base_payload = {
+        "chain": "ethereum",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transfer_index": 0,
+        "status": "included",
+        "confirmations": 20,
+        "finalized": True,
+        "from_address": "0x1111111111111111111111111111111111111111",
+        "to_address": "0x2222222222222222222222222222222222222222",
+        "asset": {
+            "type": "nft",
+            "contract_address": "0x4444444444444444444444444444444444444444",
+            "token_id": "1",
+        },
+        "block_time": "2026-10-14T08:00:00Z",
+    }
+
+    res1 = adapter.normalize(make_raw_event(base_payload))
+
+    payload2 = copy.deepcopy(base_payload)
+    payload2["asset"]["token_id"] = "2"
+    res2 = adapter.normalize(make_raw_event(payload2))
+
+    assert (
+        res1.transaction.network_metadata["asset_id"]
+        != res2.transaction.network_metadata["asset_id"]
+    )
+    assert (
+        res1.transaction.network_metadata["asset_id"]
+        == "ethereum:0x4444444444444444444444444444444444444444:1"
+    )
+    assert (
+        res2.transaction.network_metadata["asset_id"]
+        == "ethereum:0x4444444444444444444444444444444444444444:2"
+    )
+
+
+def test_crypto_nft_amount_supplied_rejected() -> None:
+    """Assert supplying amount or amount_raw for an NFT raises NormalizationError."""
+    adapter = CryptoAdapter()
+    payload = {
+        "chain": "ethereum",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transfer_index": 0,
+        "status": "included",
+        "confirmations": 20,
+        "finalized": True,
+        "from_address": "0x1111111111111111111111111111111111111111",
+        "to_address": "0x2222222222222222222222222222222222222222",
+        "asset": {
+            "type": "nft",
+            "contract_address": "0x4444444444444444444444444444444444444444",
+            "token_id": "1",
+        },
+        "amount": "1.0",
+        "block_time": "2026-10-14T08:00:00Z",
+    }
+    with pytest.raises(NormalizationError) as exc_info:
+        adapter.normalize(make_raw_event(payload))
+    assert exc_info.value.field == "amount"
+
+    payload2 = copy.deepcopy(payload)
+    del payload2["amount"]
+    payload2["amount_raw"] = "1"
+    with pytest.raises(NormalizationError) as exc_info2:
+        adapter.normalize(make_raw_event(payload2))
+    assert exc_info2.value.field == "amount_raw"
+
+
+def test_crypto_nft_quantity_zero_rejected() -> None:
+    """Assert quantity 0 for an NFT transfer is rejected."""
+    adapter = CryptoAdapter()
+    payload = {
+        "chain": "ethereum",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transfer_index": 0,
+        "status": "included",
+        "confirmations": 20,
+        "finalized": True,
+        "from_address": "0x1111111111111111111111111111111111111111",
+        "to_address": "0x2222222222222222222222222222222222222222",
+        "asset": {
+            "type": "nft",
+            "contract_address": "0x4444444444444444444444444444444444444444",
+            "token_id": "1",
+        },
+        "quantity": "0",
+        "block_time": "2026-10-14T08:00:00Z",
+    }
+    with pytest.raises(NormalizationError) as exc_info:
+        adapter.normalize(make_raw_event(payload))
+    assert exc_info.value.field == "quantity"
+
+
+def test_crypto_nft_erc721_quantity_other_than_1_rejected() -> None:
+    """Assert ERC-721 quantity other than 1 is rejected."""
+    adapter = CryptoAdapter()
+    payload = {
+        "chain": "ethereum",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transfer_index": 0,
+        "status": "included",
+        "confirmations": 20,
+        "finalized": True,
+        "from_address": "0x1111111111111111111111111111111111111111",
+        "to_address": "0x2222222222222222222222222222222222222222",
+        "asset": {
+            "type": "nft",
+            "contract_address": "0x4444444444444444444444444444444444444444",
+            "token_id": "1",
+        },
+        "token_standard": "erc721",
+        "quantity": "2",
+        "block_time": "2026-10-14T08:00:00Z",
+    }
+    with pytest.raises(NormalizationError) as exc_info:
+        adapter.normalize(make_raw_event(payload))
+    assert exc_info.value.field == "quantity"
+
+
+def test_crypto_nft_consideration_in_metadata_only() -> None:
+    """Assert consideration and sale_tx_hash live in metadata.
+
+    usd_value populates normalized_value.
+    """
+    adapter = CryptoAdapter()
+    payload = {
+        "chain": "ethereum",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transfer_index": 0,
+        "status": "included",
+        "confirmations": 20,
+        "finalized": True,
+        "from_address": "0x1111111111111111111111111111111111111111",
+        "to_address": "0x2222222222222222222222222222222222222222",
+        "asset": {
+            "type": "nft",
+            "contract_address": "0x4444444444444444444444444444444444444444",
+            "token_id": "10",
+            "symbol": "ART",
+        },
+        "consideration": {
+            "amount": "12.5",
+            "symbol": "ETH",
+            "usd_value": "35000.00",
+        },
+        "sale_tx_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "block_time": "2026-10-14T08:00:00Z",
+    }
+    res = adapter.normalize(make_raw_event(payload))
+    tx = res.transaction
+
+    # Amount is the NFT quantity
+    assert tx.amount.amount == Decimal("1")
+    assert tx.amount.currency == "ART"
+    assert tx.amount.scale == 0
+    # Normalized USD value populated from consideration.usd_value
+    assert tx.amount.normalized_value == Decimal("35000.00")
+    # Consideration and sale_tx_hash recorded in metadata only
+    assert tx.network_metadata["consideration"] == {
+        "amount": "12.5",
+        "symbol": "ETH",
+        "usd_value": "35000.00",
+    }
+    assert (
+        tx.network_metadata["sale_tx_hash"]
+        == "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    )
+
+
+def test_crypto_nft_mint_from_null_address_accepted() -> None:
+    """Assert minting from EVM null address is accepted as an ordinary transfer."""
+    adapter = CryptoAdapter()
+    payload = {
+        "chain": "ethereum",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transfer_index": 0,
+        "status": "included",
+        "confirmations": 20,
+        "finalized": True,
+        "from_address": "0x0000000000000000000000000000000000000000",
+        "to_address": "0x2222222222222222222222222222222222222222",
+        "asset": {
+            "type": "nft",
+            "contract_address": "0x4444444444444444444444444444444444444444",
+            "token_id": "1",
+        },
+        "block_time": "2026-10-14T08:00:00Z",
+    }
+    res = adapter.normalize(make_raw_event(payload))
+    assert res.transaction.status == TransactionStatus.CONFIRMED
+    assert res.parties[0].identifiers[0].value == "0x0000000000000000000000000000000000000000"

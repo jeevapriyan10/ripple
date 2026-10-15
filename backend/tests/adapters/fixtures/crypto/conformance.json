@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "network_id": "crypto",
+  "options": {
+    "network_stamp_exempt": false,
+    "profile_consistency_exempt": false
+  },
+  "cases": [
+    {
+      "name": "crypto_transfer_pending",
+      "fixture": "transfer_pending.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_eth_tx_001",
+      "must_appear": ["0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+      "must_not_appear": ["4111111111111111", "GB82WEST12345698765432"]
+    },
+    {
+      "name": "crypto_transfer_finalized",
+      "fixture": "transfer_finalized.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_eth_tx_001",
+      "must_appear": ["0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "crypto_token_transfer",
+      "fixture": "token_transfer.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_eth_tx_002",
+      "must_appear": ["0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "crypto_error_missing_amount",
+      "fixture": "error_missing_amount.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "NormalizationError",
+      "error_field": "amount",
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "crypto_error_zero_amount",
+      "fixture": "error_zero_amount.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "UnsupportedPayloadError",
+      "must_not_appear": ["4111111111111111"]
+    }
+  ]
+}
