@@ -36,7 +36,7 @@ Payment networks have evolved distinct protocols, clearing mechanisms, and count
 | **2. Card Networks** | `card` | `CARD_PAN_TOKEN`, `MERCHANT_ID` | `DEFERRED_NET` | Yes (`ISSUER` $\rightarrow$ `SCHEME` $\rightarrow$ `ACQUIRER`) | Yes (`is_reversible=True`, 120-day window) | Account takeover, card testing, stolen credentials, chargeback / friendly fraud. |
 | **3. Cryptocurrency** | `crypto` | `CRYPTO_ADDRESS` (EVM, Bitcoin, Solana, Tron) | `BLOCK_CONFIRMATION` | None (P2P on-chain) | No (`is_reversible=False`) | Rapid peel-chains, unhosted wallet layering, mixing services, off-ramp cash-outs. |
 | **4. Correspondent Banking** | `swift` | `IBAN`, `BIC`, `BANK_ACCOUNT` | `CORRESPONDENT_CHAIN` | Yes (`DEBTOR_AGENT` $\rightarrow$ `CORRESPONDENT_BANK` $\rightarrow$ `CREDITOR_AGENT`) | No (`is_reversible=False`; recalls require cooperative consent) | Cross-border trade-based laundering, sanctions evasion, multi-day delay exploitation. |
-| **5. Closed-Loop Wallets** | *(M06)* | `WALLET_USER_ID`, `EMAIL`, `PHONE` | `INTERNAL_LEDGER` | None (Atomic ledger update) | Yes (`is_reversible=True` via platform dispute) | Account takeovers, peer-to-peer layering, internal balance draining. |
+| **5. Closed-Loop Wallets** | `wallet` | `WALLET_USER_ID`, `EMAIL`, `PHONE`, `MERCHANT_ID`, `OTHER` | `INTERNAL_LEDGER` | None (Atomic ledger update) | Yes (`is_reversible=True`, 180-day simulation default) | Account takeovers, peer-to-peer layering, internal balance draining, buyer-protection abuse. |
 
 ---
 
@@ -252,6 +252,29 @@ Ripple includes built-in adapters for major payment rails, normalizing rail-spec
    - **Hops & Intermediaries**: Sequenced in funds-flow order: `DEBTOR_AGENT` (seq 1) &rarr; `CORRESPONDENT_BANK` (seq 2..N) &rarr; `CREDITOR_AGENT` (seq N+1).
    - **Strict IBAN Security & Minimization**: MOD-97 checksum validation; zero-IBAN-leak guarantee in all logs, warnings, and error responses; customer personal names, physical addresses, and remittance narratives are discarded.
    - **Documentation**: See [docs/adapters/swift.md](file:///docs/adapters/swift.md).
+
+5. **Closed-Loop Digital Wallet Adapter (`wallet`)**:
+   - **Rail Profile**: `WALLET`, `INTERNAL_LEDGER`, multi-currency fiat, `ALWAYS_ON`, private ledger, reversible (`is_reversible=True`, 180-day simulation default).
+   - **Supported Flows**: P2P transfers (`send` / `request`), merchant payments, external funding and withdrawals, refunds, dispute resolution snapshots, and rail reversals.
+   - **Lifecycle States**: `PENDING` &rarr; `PENDING_SETTLEMENT` (or `PENDING_AUTHORIZATION` for unapproved requests), `HELD` &rarr; `PENDING_SETTLEMENT` (with hold reason metadata), `COMPLETED` &rarr; `SETTLED`, `DENIED` &rarr; `REJECTED`, `FAILED` &rarr; `FAILED`, `CANCELLED`/`EXPIRED` &rarr; `CANCELLED`. Dispute events map to `DISPUTED`, `REVERSED`, or `SETTLED`; reversals map to `REVERSED`.
+   - **Identity & External Instruments**: Multi-identifier parties supporting `WALLET_USER_ID`, `EMAIL`, `PHONE`, `MERCHANT_ID`, and external payment instruments (`instr:<instrument_id>`, `OTHER`, pseudonymous).
+   - **Strict Credential Hygiene & Minimization**: Credential-class fields (PAN, CVV, IBAN, bank account numbers, OTP, PIN, password) are strictly discarded with a warning naming the field only. Ordinary PII (customer names, physical addresses, notes) is silently discarded. Emails and phone numbers are stored for entity resolution but never echoed in warnings, exceptions, logs, or error responses.
+   - **Documentation**: See [docs/adapters/wallet.md](file:///docs/adapters/wallet.md).
+
+---
+
+### Adapter Conformance Suite (`ripple.adapters.testing`)
+
+The Adapter Conformance Suite is a reusable, data-driven test library that verifies every adapter (built-in or third-party plugin) satisfies the strict purity, determinism, time discipline, security, and error contracts demanded by Ripple's ingestion pipeline.
+
+- **Clean Package Boundary**: Shipped directly within `ripple.adapters.testing`, relying solely on the Python standard library and Pydantic v2 (zero pytest imports in runtime code).
+- **21 Conformance Checks (CF-01 through CF-21)**:
+  - Surface & Registration: Contract surface (`CF-01`), dynamic registry integration (`CF-02`), safe `can_handle` execution (`CF-03`).
+  - Purity & Determinism: Output determinism across fresh instances (`CF-04`), AST static purity scan (`CF-05`), runtime dynamic purity monkey-patch guards (`CF-06`).
+  - Data & Temporal Discipline: Timezone-aware UTC time discipline (`CF-07`), network stamping and profile consistency (`CF-08`), lifecycle snapshot stability (`CF-09`), graph integrity (`CF-10`), settlement coherence (`CF-11`), strict Decimal money discipline (`CF-12`), JSON serialization round-tripping (`CF-13`).
+  - Execution Safety: Caller input immutability (`CF-14`), multi-threaded statelessness (`CF-15`), typed error contracts (`CF-16`), batch failure isolation (`CF-17`), zero credential/PII leak scanning (`CF-18`), deterministic mutation fuzzing (`CF-19`), performance latency smoke benchmarks (`CF-20`), cross-network foreign payload rejection (`CF-21`).
+- **Declarative Manifests (`conformance.json`)**: Every registered adapter declares its test cases, expected errors, lifecycle groups, and leak boundaries in a JSON manifest beside its fixtures.
+- **Documentation**: See [docs/adapters/conformance.md](file:///docs/adapters/conformance.md) and [docs/adapters/writing-an-adapter.md](file:///docs/adapters/writing-an-adapter.md).
 
 ---
 
