@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "network_id": "upi",
+  "options": {
+    "network_stamp_exempt": false,
+    "profile_consistency_exempt": false
+  },
+  "cases": [
+    {
+      "name": "upi_pay_success",
+      "fixture": "pay_success.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_upi_pay_001",
+      "must_appear": ["UPI_TXN_001_PAY_SUCCESS"],
+      "must_not_appear": ["4111111111111111", "GB82WEST12345698765432"]
+    },
+    {
+      "name": "upi_collect_pending",
+      "fixture": "collect_pending.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_upi_coll_001",
+      "must_appear": ["UPI_TXN_003_COLLECT"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "upi_collect_success",
+      "fixture": "collect_success.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_upi_coll_001",
+      "must_appear": ["UPI_TXN_003_COLLECT"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "upi_error_non_inr_currency",
+      "fixture": "error_non_inr_currency.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "NormalizationError",
+      "error_field": "currency",
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "upi_error_unsupported_mandate",
+      "fixture": "error_unsupported_mandate.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "UnsupportedPayloadError",
+      "must_not_appear": ["4111111111111111"]
+    }
+  ]
+}

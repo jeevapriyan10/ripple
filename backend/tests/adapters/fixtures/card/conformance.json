@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "network_id": "card",
+  "options": {
+    "network_stamp_exempt": false,
+    "profile_consistency_exempt": false
+  },
+  "cases": [
+    {
+      "name": "card_auth_approved",
+      "fixture": "auth_approved.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_card_001",
+      "must_appear": ["NETREF_CARD_001_AUTH"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "card_clearing",
+      "fixture": "clearing.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_card_001",
+      "must_appear": ["NETREF_CARD_001_AUTH"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "card_refund",
+      "fixture": "refund.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_card_002",
+      "must_appear": ["NETREF_CARD_004_REFUND"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "card_error_missing_amount",
+      "fixture": "error_missing_amount.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "NormalizationError",
+      "error_field": "amount",
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "card_error_unsupported_event_type",
+      "fixture": "error_unsupported_event_type.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "UnsupportedPayloadError",
+      "must_not_appear": ["4111111111111111"]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "event_type": "authorization",
+  "network_reference": "CARD_ERR_001",
+  "processing_code": "00",
+  "currency": "USD",
+  "pan": "4111111111111111"
+}

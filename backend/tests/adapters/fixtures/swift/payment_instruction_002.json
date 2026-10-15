@@ -1,0 +1,38 @@
+{
+  "event_type": "payment",
+  "message_type": "pacs.008",
+  "uetr": "f1c2b3a4-5678-90ab-cdef-1234567890ab",
+  "creation_datetime": "2026-10-14T10:00:00Z",
+  "value_date": "2026-10-14",
+  "settlement_amount": {
+    "amount": "12000.00",
+    "currency": "EUR"
+  },
+  "instructed_amount": {
+    "amount": "12000.00",
+    "currency": "EUR"
+  },
+  "charge_bearer": "SHA",
+  "debtor": {
+    "account": {
+      "iban": "DE89370400440532013000"
+    },
+    "type": "business",
+    "country": "DE"
+  },
+  "creditor": {
+    "account": {
+      "iban": "GB82WEST12345698765432"
+    },
+    "type": "individual",
+    "country": "GB"
+  },
+  "debtor_agent": {
+    "bic": "COBADEFF",
+    "received_at": "2026-10-14T10:05:00Z"
+  },
+  "creditor_agent": {
+    "bic": "WESTGB2L",
+    "received_at": "2026-10-14T10:15:00Z"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "txn_id": "UPI_ERR_CURR",
+  "txn_type": "PAY",
+  "status": "SUCCESS",
+  "amount": "100.00",
+  "currency": "USD",
+  "initiated_at": "2026-10-13T10:00:00Z",
+  "completed_at": "2026-10-13T10:00:05Z",
+  "payer": {
+    "vpa": "alice@oksbi"
+  },
+  "payee": {
+    "vpa": "bob@okaxis"
+  }
+}

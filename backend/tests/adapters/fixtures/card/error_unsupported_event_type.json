@@ -1,0 +1,8 @@
+{
+  "event_type": "invalid_card_event",
+  "network_reference": "CARD_ERR_002",
+  "processing_code": "000000",
+  "currency": "USD",
+  "amount": "100.00",
+  "pan": "4111111111111111"
+}

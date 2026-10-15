@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "network_id": "universal",
+  "options": {
+    "network_stamp_exempt": true,
+    "network_stamp_exempt_reason": "Universal pass-through adapter preserves originating transaction network and identifier networks verbatim without re-stamping.",
+    "profile_consistency_exempt": true,
+    "profile_consistency_exempt_reason": "Universal pass-through adapter ingests pre-structured multi-rail domain payloads across any asset class, currency, or settlement model."
+  },
+  "cases": [
+    {
+      "name": "universal_payment_settled",
+      "fixture": "payment_settled.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_univ_001",
+      "must_appear": ["univ_tx_001"],
+      "must_not_appear": ["4111111111111111", "GB82WEST12345698765432"]
+    },
+    {
+      "name": "universal_error_missing_parties",
+      "fixture": "error_missing_parties.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "NormalizationError",
+      "error_field": "parties",
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "universal_error_missing_transaction",
+      "fixture": "error_missing_transaction.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "NormalizationError",
+      "error_field": "transaction",
+      "must_not_appear": ["4111111111111111"]
+    }
+  ]
+}
