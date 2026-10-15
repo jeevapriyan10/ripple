@@ -1,0 +1,37 @@
+{
+  "event_type": "merchant_payment",
+  "txn_id": "WLT_TXN_003_MERC",
+  "status": "COMPLETED",
+  "amount": "89.99",
+  "currency": "USD",
+  "fee": {
+    "amount": "2.50",
+    "currency": "USD"
+  },
+  "fee_payer": "receiver",
+  "converted": {
+    "amount": "80.00",
+    "currency": "EUR",
+    "fx_rate": "0.889"
+  },
+  "created_at": "2026-10-15T10:00:00Z",
+  "completed_at": "2026-10-15T10:00:02Z",
+  "sender": {
+    "account_id": "usr_alice_001",
+    "email": "alice@example.com",
+    "phone": "+15551234567",
+    "account_type": "personal",
+    "country": "US",
+    "kyc_level": "full"
+  },
+  "receiver": {
+    "account_id": "merc_coffee_001",
+    "email": "merchant@example.com",
+    "account_type": "merchant",
+    "mcc": "5499",
+    "merchant_id": "MERC_COFFEE_SHOP",
+    "country": "US"
+  },
+  "buyer_protection": true,
+  "channel": "wallet_app"
+}

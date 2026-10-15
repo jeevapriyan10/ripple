@@ -1,0 +1,7 @@
+{
+  "event_type": "crypto_swap",
+  "txn_id": "WLT_TXN_ERR_002",
+  "amount": "100.00",
+  "currency": "USD",
+  "created_at": "2026-10-15T08:00:00Z"
+}

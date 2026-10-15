@@ -1,0 +1,14 @@
+{
+  "event_type": "p2p",
+  "txn_id": "WLT_TXN_ERR_001",
+  "status": "COMPLETED",
+  "currency": "USD",
+  "created_at": "2026-10-15T08:00:00Z",
+  "completed_at": "2026-10-15T08:00:05Z",
+  "sender": {
+    "account_id": "usr_alice_001"
+  },
+  "receiver": {
+    "account_id": "usr_bob_002"
+  }
+}
