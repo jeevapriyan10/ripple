@@ -1,0 +1,14 @@
+{
+  "chain": "ethereum",
+  "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "transfer_index": 0,
+  "status": "pending",
+  "from_address": "0x1111111111111111111111111111111111111111",
+  "to_address": "0x2222222222222222222222222222222222222222",
+  "asset": {
+    "type": "native",
+    "symbol": "ETH",
+    "decimals": 18
+  },
+  "amount": "0.000000000000000000"
+}

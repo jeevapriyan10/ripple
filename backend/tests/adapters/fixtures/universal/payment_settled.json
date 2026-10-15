@@ -1,0 +1,52 @@
+{
+  "transaction": {
+    "transaction_id": "00000000-0000-0000-0000-000000000001",
+    "network_transaction_ref": "univ_tx_001",
+    "network": "universal",
+    "sender_id": "00000000-0000-0000-0000-000000000010",
+    "receiver_id": "00000000-0000-0000-0000-000000000020",
+    "sender_identifier": {
+      "type": "EMAIL",
+      "value": "sender@example.com",
+      "network": "universal"
+    },
+    "receiver_identifier": {
+      "type": "EMAIL",
+      "value": "receiver@example.com",
+      "network": "universal"
+    },
+    "amount": {
+      "amount": "100.00",
+      "currency": "USD",
+      "scale": 2
+    },
+    "initiated_at": "2026-10-15T10:00:00Z",
+    "settled_at": "2026-10-15T10:00:05Z",
+    "status": "SETTLED",
+    "settlement_model": "INTERNAL_LEDGER"
+  },
+  "parties": [
+    {
+      "party_id": "00000000-0000-0000-0000-000000000010",
+      "home_network": "universal",
+      "identifiers": [
+        {
+          "type": "EMAIL",
+          "value": "sender@example.com",
+          "network": "universal"
+        }
+      ]
+    },
+    {
+      "party_id": "00000000-0000-0000-0000-000000000020",
+      "home_network": "universal",
+      "identifiers": [
+        {
+          "type": "EMAIL",
+          "value": "receiver@example.com",
+          "network": "universal"
+        }
+      ]
+    }
+  ]
+}

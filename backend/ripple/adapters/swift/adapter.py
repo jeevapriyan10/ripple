@@ -279,6 +279,12 @@ class SwiftAdapter(NetworkAdapter):
             agent_bic: str,
             role_name: str,
         ) -> tuple[PartyIdentifier, Party]:
+            if not isinstance(party_dict, dict):
+                raise NormalizationError(
+                    f"Field '{role_name}' must be an object with account.",
+                    field=role_name,
+                    reason=f"Invalid {role_name} structure",
+                )
             acc_dict = require(party_dict, "account", f"{role_name}.account")
             if not isinstance(acc_dict, dict):
                 raise NormalizationError(
@@ -345,6 +351,7 @@ class SwiftAdapter(NetworkAdapter):
                 country_code=country_code,
                 attributes=party_attrs,
                 home_network="swift",
+                created_at=event.received_at,
             )
             return identifier, party
 
@@ -524,13 +531,16 @@ class SwiftAdapter(NetworkAdapter):
 
         if "instructed_amount" in payload and isinstance(payload["instructed_amount"], dict):
             instr_dict = payload["instructed_amount"]
-            if isinstance(instr_dict.get("amount"), float):
-                raise NormalizationError(
-                    "Field 'instructed_amount.amount' must not be a float.",
-                    field="instructed_amount.amount",
-                    reason="Float prohibited in instructed_amount",
-                )
-            network_metadata["instructed_amount"] = instr_dict
+            for ik, iv in instr_dict.items():
+                if isinstance(iv, float):
+                    raise NormalizationError(
+                        f"Field 'instructed_amount.{ik}' must not be a float.",
+                        field=f"instructed_amount.{ik}",
+                        reason=f"Float prohibited in instructed_amount.{ik}",
+                    )
+            network_metadata["instructed_amount"] = {
+                k: str(v) for k, v in instr_dict.items() if v is not None
+            }
 
         if "exchange_rate" in payload:
             rate_val = payload["exchange_rate"]

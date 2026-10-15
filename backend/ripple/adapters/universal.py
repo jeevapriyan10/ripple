@@ -5,6 +5,7 @@ domain schema. Used for direct API ingestion, synthetic generator benchmarking,
 replay pipelines, and multi-rail testing without dedicated protocol decoding.
 """
 
+import copy
 from typing import ClassVar
 from uuid import UUID
 
@@ -86,7 +87,7 @@ class UniversalAdapter(NetworkAdapter):
         Overwrites transaction.observed_at with event.received_at, derives the correlation_key
         as 'universal:{transaction_id}', and returns a canonical NormalizationResult.
         """
-        payload = event.payload
+        payload = copy.deepcopy(event.payload)
         if not isinstance(payload, dict):
             raise NormalizationError(
                 "Payload must be a dictionary containing 'transaction' and 'parties'.",
@@ -157,8 +158,11 @@ class UniversalAdapter(NetworkAdapter):
                     field=f"parties[{idx}]",
                     reason="Party entry is not a dictionary",
                 )
+            p_data = dict(party_data)
+            if "created_at" not in p_data:
+                p_data["created_at"] = event.received_at
             try:
-                party = Party.model_validate(party_data)
+                party = Party.model_validate(p_data)
             except ValidationError as exc:
                 first_err = exc.errors()[0]
                 loc_str = ".".join(str(loc) for loc in first_err["loc"])

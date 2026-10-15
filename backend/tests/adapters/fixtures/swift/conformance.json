@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "network_id": "swift",
+  "options": {
+    "network_stamp_exempt": false,
+    "profile_consistency_exempt": false
+  },
+  "cases": [
+    {
+      "name": "swift_payment_instruction",
+      "fixture": "payment_instruction.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_swift_001",
+      "must_appear": ["eb92b1a0-1234-4567-89ab-cdef01234567"],
+      "must_not_appear": ["ACME Industrial Corp", "Musterstrasse 1", "4111111111111111"]
+    },
+    {
+      "name": "swift_status_accc",
+      "fixture": "status_accc.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_swift_001",
+      "must_appear": ["eb92b1a0-1234-4567-89ab-cdef01234567"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "swift_return_payment",
+      "fixture": "return_payment.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_swift_001",
+      "must_appear": ["eb92b1a0-1234-4567-89ab-cdef01234567"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "swift_payment_instruction_002",
+      "fixture": "payment_instruction_002.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_swift_002",
+      "must_appear": ["f1c2b3a4-5678-90ab-cdef-1234567890ab"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "swift_error_invalid_uetr",
+      "fixture": "error_invalid_uetr.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "NormalizationError",
+      "error_field": "uetr",
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "swift_error_unsupported_pacs009",
+      "fixture": "error_unsupported_pacs009.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "UnsupportedPayloadError",
+      "must_not_appear": ["4111111111111111"]
+    }
+  ]
+}

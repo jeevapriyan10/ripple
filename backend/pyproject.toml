@@ -64,4 +64,7 @@ no_implicit_reexport = true
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+markers = [
+    "conformance: Adapter conformance test suite",
+]
 

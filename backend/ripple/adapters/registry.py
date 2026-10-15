@@ -114,7 +114,6 @@ class AdapterRegistry:
         """Unregister and return the adapter for the given network_id, or None if not found."""
         clean_id = network_id.lower()
         with self._lock:
-
             removed = self._adapters.pop(clean_id, None)
             if removed:
                 logger.info("Unregistered network adapter for '%s'", clean_id)
@@ -306,6 +305,14 @@ def load_enabled_adapters(
     except Exception as exc:
         logger.error("Failed to register built-in swift adapter: %s", exc)
         reg._failed_registrations["swift"] = str(exc)
+
+    try:
+        from ripple.adapters.wallet import WalletAdapter
+
+        reg.register(WalletAdapter, replace=True, settings=cfg)
+    except Exception as exc:
+        logger.error("Failed to register built-in wallet adapter: %s", exc)
+        reg._failed_registrations["wallet"] = str(exc)
 
     # 2. Run external plugin discovery
     discover_plugins(registry=reg)

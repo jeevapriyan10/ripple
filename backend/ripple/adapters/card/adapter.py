@@ -1,5 +1,6 @@
 """Payment card network adapter implementation for Ripple."""
 
+import copy
 import hashlib
 import hmac
 import logging
@@ -170,7 +171,7 @@ class CardAdapter(NetworkAdapter):
 
     def normalize(self, event: RawEvent) -> NormalizationResult:
         """Transform a raw card payment event into Ripple's universal domain model."""
-        payload = payload_as_dict(event)
+        payload = copy.deepcopy(payload_as_dict(event))
         warnings: list[str] = []
 
         # 1. Prohibited sensitive fields detection and discard

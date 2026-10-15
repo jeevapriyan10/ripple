@@ -1,0 +1,25 @@
+{
+  "event_type": "funding",
+  "txn_id": "WLT_TXN_004_FUND",
+  "status": "COMPLETED",
+  "amount": "500.00",
+  "currency": "USD",
+  "created_at": "2026-10-15T11:00:00Z",
+  "completed_at": "2026-10-15T11:00:10Z",
+  "account": {
+    "account_id": "usr_alice_001",
+    "email": "alice@example.com",
+    "phone": "+15551234567",
+    "account_type": "personal",
+    "country": "US",
+    "kyc_level": "full"
+  },
+  "instrument": {
+    "instrument_id": "tok_bank_checking_99",
+    "instrument_type": "bank_account",
+    "country": "US",
+    "name": "Alice Bank"
+  },
+  "provisional_credit": true,
+  "channel": "wallet_app"
+}

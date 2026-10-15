@@ -30,8 +30,11 @@ Each event describes **one single value transfer**:
 | `execution_status` | String | No | Smart contract execution result: `success` (default) or `reverted`. |
 | `from_address` | String | Yes | Sender public address or smart contract. |
 | `to_address` | String | Yes | Recipient public address or smart contract. |
-| `asset` | Object | No | Asset descriptor: `{type: "native" | "token", symbol, decimals, contract_address}`. Native assets default from the chain table; tokens require symbol, decimals, and contract address. |
-| `amount` / `amount_raw` | String | Yes | Exactly one required. `amount`: decimal string in whole units; `amount_raw`: integer string in base units. Floats strictly prohibited. |
+| `asset` | Object | No | Asset descriptor: `{type: "native" | "token" | "nft", symbol, decimals, contract_address, token_id}`. Native assets default from the chain table; tokens require symbol, decimals, and contract address. NFTs require contract address, token_id (string `[A-Za-z0-9]{1,80}`), fixed decimals 0, and optional quantity. |
+| `amount` / `amount_raw` | String | Conditional | Exactly one required for native assets and fungible tokens (`amount`: decimal string in whole units; `amount_raw`: integer string in base units). Strictly prohibited for NFTs (use `quantity` instead). Floats strictly prohibited. |
+| `quantity` | String | Conditional | Number of NFT items transferred (integer string, default `"1"`). Mandatory/defaulted for NFTs; ERC-721 must be exactly `"1"`. Prohibited for fungible assets. |
+| `consideration` | Object | No | NFT marketplace sale price paid in a separate transfer: `{amount: str, symbol: str, usd_value?: str}`. Preserved in `network_metadata` only; never as Money. |
+| `sale_tx_hash` | String | No | Transaction hash of the marketplace sale transaction for NFT transfers. Preserved in `network_metadata`. |
 | `fee` | Object | No | Gas / network fee: `{amount` or `amount_raw`, `asset}`. Asset defaults to the chain's native currency. |
 | `first_seen_at` | String / Int | No | ISO-8601 string or integer epoch seconds when a node first observed the transaction in the mempool. |
 | `block_number` | Integer | Conditional | Ledger block or slot number. Required when `status="included"`. |
@@ -39,10 +42,10 @@ Each event describes **one single value transfer**:
 | `confirmations` | Integer | Conditional | Current block confirmations. Required when `status="included"`. |
 | `finalized` | Boolean | No | Explicit consensus finality flag from upstream indexing node. |
 | `finalized_at` | String / Int | No | Timestamp when finality was established. |
-| `usd_value` | String / Number | No | External oracle / price-feed USD valuation (decimal string). Mapped to `Money.normalized_value`. |
+| `usd_value` | String / Number | No | External oracle / price-feed USD valuation (decimal string). Mapped to `Money.normalized_value`. For NFTs, populated from `consideration.usd_value` when present. |
 | `from_label` / `to_label` | Object | No | External intelligence labels: `{entity: str, category: "exchange" | "mixer" | "bridge" | "defi" | "gambling" | "sanctioned" | "unknown"}`. |
 | `from_is_contract` / `to_is_contract` | Boolean | No | Indicates whether address is a smart contract / bytecode account. |
-| `token_standard` | String | No | Token protocol standard (e.g. `ERC-20`, `SPL`, `TRC-20`). |
+| `token_standard` | String | No | Token protocol standard (e.g. `ERC-20`, `ERC-721`, `ERC-1155`, `SPL`, `TRC-20`). |
 | `replaced_by` | String | Conditional | New transaction hash when `status="replaced"` (e.g. RBF / nonce replacement). |
 | `nonce` | Integer | No | Account transaction sequence nonce. |
 | `source_feed` | String | No | Ingestion source / RPC node provider (e.g. `alchemy`, `quicknode`, `mempool_api`). |
@@ -59,7 +62,9 @@ Each event describes **one single value transfer**:
 | Derived | `Transaction.transaction_id` | `deterministic_uuid("crypto", chain, tx_hash, str(transfer_index))` |
 | Derived | `NormalizationResult.correlation_key` | `"crypto:" + chain + ":" + (tx_hash.lower() if evm else tx_hash) + ":" + transfer_index` |
 | `status` + `confirmations` | `NormalizationResult.lifecycle_stage` | `"mempool"`, `"confirmation_<n>"`, `"finalized"`, `"failed"`, `"dropped"`, `"replaced"`, `"reorged"` |
-| `amount` / `amount_raw` | `Transaction.amount` | `Money(amount=..., currency=symbol.upper(), scale=decimals, asset_class=AssetClass.CRYPTO)` |
+| `amount` / `amount_raw` | `Transaction.amount` | Fungible: `Money(amount=..., currency=symbol.upper(), scale=decimals, asset_class=AssetClass.CRYPTO)`. NFTs: `Money(amount=quantity, currency=symbol.upper(), scale=0, asset_class=AssetClass.CRYPTO)`. |
+| `asset` (NFT) | `Transaction.network_metadata` | For NFTs, `asset_id = "<chain>:<contract_address>:<token_id>"` (contract lowercased for EVM). `token_id` and `token_standard` recorded in metadata. |
+| `consideration` / `sale_tx_hash` | `Transaction.network_metadata` | Preserved verbatim in metadata. If `consideration.usd_value` is supplied, it populates `Money.normalized_value`. |
 | `fee` | `Transaction.fee` | `Money` in fee asset (usually native asset, scale from chain table) |
 | `first_seen_at` / `block_time` | `Transaction.initiated_at` | `first_seen_at` if present, else `block_time` with warning |
 | `finalized_at` / `block_time` | `Transaction.settled_at` | Only set for `CONFIRMED`; `finalized_at` if present, else `block_time` with warning |
@@ -69,7 +74,7 @@ Each event describes **one single value transfer**:
 | `to_address` | `Transaction.receiver_id` & `Party` | `CRYPTO_ADDRESS` identifier; same deterministic party identity. |
 | `from_label` / `to_label` | `Party.party_type` & `RiskFlags` | Category `"exchange"` &rarr; `PartyType.EXCHANGE`. Category `"sanctioned"` &rarr; `RiskFlags.is_sanctioned = True`. Mule fields remain `None`. |
 | `usd_value` | `Money.normalized_value` | Preserved as `Decimal` in universal amount; `network_metadata["normalized_currency"] = "USD"`. |
-| Ledger metadata | `Transaction.network_metadata` | Stores `chain`, `tx_hash`, `transfer_index`, `block_number`, `confirmations`, `required_confirmations`, `asset_id` (`"<chain>:<contract_address or native>"`), `token_standard`, `nonce`, `replaced_by`, `reorged`, and approximations made. |
+| Ledger metadata | `Transaction.network_metadata` | Stores `chain`, `tx_hash`, `transfer_index`, `block_number`, `confirmations`, `required_confirmations`, `asset_id`, `token_standard`, `nonce`, `replaced_by`, `reorged`, and approximations made. |
 
 ---
 
@@ -116,3 +121,9 @@ The crypto adapter does not discard data fields because public blockchain transa
    Privacy-preserving transactions (e.g. Monero, Zcash shielded pools) lack public sender, receiver, and transfer amounts and cannot be represented in Ripple's graph model.
 10. **Testnet Addresses Unsupported**:
     Structural address checks enforce mainnet patterns (e.g. Bitcoin `bc1` mainnet bech32; testnet `tb1` is rejected).
+11. **No Wash-Trade Pairing (Downstream Job)**:
+    Wash-trade detection (pairing an NFT transfer with its corresponding marketplace purchase or consideration payment across two distinct transfers) is a downstream Score/Chain job, not the adapter's responsibility. The adapter records `consideration` and `sale_tx_hash` as metadata only.
+12. **Null-Address Super-Node (Mints & Burns)**:
+    Mints and burns are represented as standard on-chain transfers from or to the blockchain's null address (e.g. `0x0000000000000000000000000000000000000000`). Mesh graph ingestion should treat the null address as a system super-node.
+13. **Token ID Preserved Only for NFT Assets**:
+    `token_id` is preserved in `asset_id` (`"<chain>:<contract>:<token_id>"`) and `network_metadata` only for assets of type `"nft"`. Fungible tokens do not retain a `token_id`.

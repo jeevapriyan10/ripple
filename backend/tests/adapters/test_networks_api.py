@@ -46,6 +46,7 @@ def test_list_networks_endpoint(client: TestClient) -> None:
     assert "card" in network_ids
     assert "crypto" in network_ids
     assert "swift" in network_ids
+    assert "wallet" in network_ids
 
 
 def test_get_network_detail_success(client: TestClient) -> None:
@@ -284,3 +285,61 @@ def test_readiness_reflects_card_absence_when_production_registration_fails() ->
                 adapters_dep = data["dependencies"]["adapters"]
                 assert "card" not in adapters_dep["ids"]
                 assert "card" in adapters_dep["failed"]
+
+
+def test_dry_run_normalize_wallet_success(client: TestClient) -> None:
+    """Assert POST /api/v1/networks/wallet/normalize returns 200 with NormalizationResult."""
+    with open(FIXTURES_DIR / "wallet" / "p2p_send_completed.json", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    response = client.post(
+        "/api/v1/networks/wallet/normalize",
+        json={"payload": payload},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["transaction"]["network"] == "wallet"
+    assert data["transaction"]["status"] == "SETTLED"
+    assert data["correlation_key"] == "wallet:WLT_TXN_001_P2P"
+
+
+def test_dry_run_wallet_malformed_with_card_number_returns_422_without_leaking(
+    client: TestClient,
+) -> None:
+    """Assert malformed wallet payload with card_number returns 422.
+
+    Body must not contain the sensitive card number.
+    """
+    malformed_payload = {
+        "event_type": "p2p",
+        "txn_id": "WLT_LEAK_TEST_01",
+        "status": "COMPLETED",
+        "card_number": "4111111111111111",
+        # Missing amount, sender, receiver, created_at to trigger 422
+    }
+
+    response = client.post(
+        "/api/v1/networks/wallet/normalize",
+        json={"payload": malformed_payload},
+    )
+    assert response.status_code == 422
+    body_text = response.text
+    # Sensitive card_number must NEVER appear in error response body
+    assert "4111111111111111" not in body_text
+
+
+def test_enabled_networks_wallet_only() -> None:
+    """Assert ENABLED_NETWORKS=wallet loads only the wallet adapter."""
+    registry = get_registry()
+    registry.clear()
+
+    wallet_only_settings = Settings(
+        APP_ENV="development",
+        ENABLED_NETWORKS="wallet",
+    )
+    load_enabled_adapters(settings=wallet_only_settings, registry=registry)
+
+    assert registry.network_ids() == ["wallet"]
+    assert registry.has("wallet") is True
+    assert registry.has("upi") is False
+    assert registry.has("card") is False

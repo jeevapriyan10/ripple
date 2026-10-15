@@ -1,16 +1,17 @@
 # Makefile for Ripple Fraud Detection Platform
-.PHONY: help up down test lint fmt logs
+.PHONY: help up down test lint fmt logs conformance
 
 DOCKER_COMPOSE ?= $(shell if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then echo "docker compose"; else echo "docker-compose"; fi)
 
 help:
 	@echo "Available commands:"
-	@echo "  make up     - Build and start all services via Docker Compose"
-	@echo "  make down   - Stop and tear down running containers"
-	@echo "  make logs   - Tail logs from all running containers"
-	@echo "  make test   - Run backend pytest test suite"
-	@echo "  make lint   - Run ruff, black --check, and mypy"
-	@echo "  make fmt    - Format code with black and ruff --fix"
+	@echo "  make up          - Build and start all services via Docker Compose"
+	@echo "  make down        - Stop and tear down running containers"
+	@echo "  make logs        - Tail logs from all running containers"
+	@echo "  make test        - Run backend pytest test suite"
+	@echo "  make lint        - Run ruff, black --check, and mypy"
+	@echo "  make fmt         - Format code with black and ruff --fix"
+	@echo "  make conformance - Run adapter conformance test suite"
 
 up:
 	$(DOCKER_COMPOSE) up --build
@@ -30,6 +31,17 @@ test:
 		docker build --target tester -t ripple-backend-tester ./backend >/dev/null && docker run --rm ripple-backend-tester; \
 	else \
 		cd backend && pytest tests; \
+	fi
+
+conformance:
+	@if command -v poetry >/dev/null 2>&1; then \
+		cd backend && poetry run pytest -m conformance -q; \
+	elif $(DOCKER_COMPOSE) ps --services --filter "status=running" 2>/dev/null | grep -q backend; then \
+		$(DOCKER_COMPOSE) exec backend pytest -m conformance -q; \
+	elif command -v docker >/dev/null 2>&1; then \
+		docker build --target tester -t ripple-backend-tester ./backend >/dev/null && docker run --rm ripple-backend-tester poetry run pytest -m conformance -q; \
+	else \
+		cd backend && pytest -m conformance -q; \
 	fi
 
 lint:

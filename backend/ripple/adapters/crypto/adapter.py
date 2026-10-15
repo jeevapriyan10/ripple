@@ -137,7 +137,24 @@ class CryptoAdapter(NetworkAdapter):
         # 2. Extract mandatory transaction identifiers
         raw_chain = require(payload, "chain", "chain")
         tx_hash = str(require(payload, "tx_hash", "tx_hash")).strip()
-        transfer_index = int(payload.get("transfer_index", 0))
+        raw_ti = payload.get("transfer_index")
+        if raw_ti is None:
+            transfer_index = 0
+        elif isinstance(raw_ti, bool):
+            raise NormalizationError(
+                "Field 'transfer_index' must be an integer, got bool.",
+                field="transfer_index",
+                reason="Invalid transfer_index",
+            )
+        else:
+            try:
+                transfer_index = int(raw_ti)
+            except (ValueError, TypeError) as exc:
+                raise NormalizationError(
+                    "Field 'transfer_index' must be an integer.",
+                    field="transfer_index",
+                    reason="Invalid transfer_index",
+                ) from exc
 
         raw_status = str(require(payload, "status", "status")).strip().lower()
 
@@ -183,6 +200,30 @@ class CryptoAdapter(NetworkAdapter):
 
         # 5. Asset resolution
         asset_dict = payload.get("asset")
+        if asset_dict is not None and not isinstance(asset_dict, dict):
+            raise NormalizationError(
+                "Field 'asset' must be an object.",
+                field="asset",
+                reason="Invalid asset structure",
+            )
+
+        def _parse_decimals(raw_val: Any, field_name: str) -> int:
+            if isinstance(raw_val, bool) or raw_val is None:
+                raise NormalizationError(
+                    f"Field '{field_name}' must be an integer, got {type(raw_val).__name__}.",
+                    field=field_name,
+                    reason=f"Invalid {field_name}",
+                )
+            try:
+                return int(raw_val)
+            except (ValueError, TypeError) as exc:
+                raise NormalizationError(
+                    f"Field '{field_name}' must be an integer.",
+                    field=field_name,
+                    reason=f"Invalid {field_name}",
+                ) from exc
+
+        token_id: str | None = None
         if not asset_dict:
             asset_type = "native"
             asset_symbol = chain_spec.native_symbol
@@ -191,23 +232,57 @@ class CryptoAdapter(NetworkAdapter):
         else:
             asset_type = str(asset_dict.get("type", "native")).strip().lower()
             if asset_type == "native":
+                raw_sym = asset_dict.get("symbol")
+                if raw_sym is not None and not str(raw_sym).strip():
+                    raise NormalizationError(
+                        "Field 'asset.symbol' cannot be blank.",
+                        field="asset.symbol",
+                        reason="Blank asset.symbol",
+                    )
                 asset_symbol = (
-                    str(asset_dict.get("symbol", chain_spec.native_symbol)).strip().upper()
+                    str(raw_sym).strip().upper()
+                    if raw_sym is not None
+                    else chain_spec.native_symbol
                 )
-                asset_decimals = int(asset_dict.get("decimals", chain_spec.decimals))
+                asset_decimals = _parse_decimals(
+                    asset_dict.get("decimals", chain_spec.decimals), "asset.decimals"
+                )
                 contract_address = None
             elif asset_type == "token":
                 asset_symbol = str(require(asset_dict, "symbol", "asset.symbol")).strip().upper()
-                asset_decimals = int(require(asset_dict, "decimals", "asset.decimals"))
+                asset_decimals = _parse_decimals(
+                    require(asset_dict, "decimals", "asset.decimals"), "asset.decimals"
+                )
                 contract_address = str(
                     require(asset_dict, "contract_address", "asset.contract_address")
                 ).strip()
+            elif asset_type == "nft":
+                asset_symbol = str(asset_dict.get("symbol", "NFT")).strip().upper()
+                asset_decimals = 0
+                contract_address = str(
+                    require(asset_dict, "contract_address", "asset.contract_address")
+                ).strip()
+                raw_token_id = require(asset_dict, "token_id", "asset.token_id")
+                token_id = str(raw_token_id).strip()
+                if not re.match(r"^[A-Za-z0-9]{1,80}$", token_id):
+                    raise NormalizationError(
+                        "Field 'asset.token_id' must match [A-Za-z0-9]{1,80}.",
+                        field="asset.token_id",
+                        reason="Invalid token_id format",
+                    )
             else:
                 raise NormalizationError(
-                    f"Unsupported asset type '{asset_type}'. Allowed: 'native', 'token'.",
+                    f"Unsupported asset type '{asset_type}'. Allowed: 'native', 'token', 'nft'.",
                     field="asset.type",
                     reason=f"Unsupported asset type '{asset_type}'",
                 )
+
+        if not asset_symbol or not asset_symbol.strip():
+            raise NormalizationError(
+                "Field 'asset.symbol' cannot be blank.",
+                field="asset.symbol",
+                reason="Blank asset.symbol",
+            )
 
         if asset_decimals > 18:
             raise NormalizationError(
@@ -227,6 +302,9 @@ class CryptoAdapter(NetworkAdapter):
             ("amount", payload.get("amount")),
             ("amount_raw", payload.get("amount_raw")),
             ("usd_value", payload.get("usd_value")),
+            ("block_number", payload.get("block_number")),
+            ("nonce", payload.get("nonce")),
+            ("source_feed", payload.get("source_feed")),
         ]:
             if isinstance(val, float):
                 raise NormalizationError(
@@ -235,43 +313,105 @@ class CryptoAdapter(NetworkAdapter):
                     reason=f"Float prohibited in '{field_key}'",
                 )
 
-        has_amount = payload.get("amount") is not None
-        has_amount_raw = payload.get("amount_raw") is not None
+        token_standard = payload.get("token_standard") or (
+            asset_dict.get("token_standard") if asset_dict else None
+        )
+        if token_standard is not None:
+            token_standard = str(token_standard).strip()
 
-        if has_amount and has_amount_raw:
-            raise NormalizationError(
-                "Supply exactly one of 'amount' or 'amount_raw', not both.",
-                field="amount",
-                reason="Mutually exclusive amount and amount_raw",
-            )
-        if not has_amount and not has_amount_raw:
-            raise NormalizationError(
-                "Missing transfer amount: supply either 'amount' or 'amount_raw'.",
-                field="amount",
-                reason="Missing transfer amount",
-            )
-
-        if has_amount_raw:
-            raw_str = str(payload["amount_raw"]).strip()
-            if not raw_str.isdigit():
+        if asset_type == "nft":
+            if payload.get("amount") is not None:
                 raise NormalizationError(
-                    "Field 'amount_raw' must contain only digits.",
-                    field="amount_raw",
-                    reason="Non-digit amount_raw",
+                    "Field 'amount' is not allowed for NFT assets.",
+                    field="amount",
+                    reason="amount not allowed for NFT",
                 )
-            parsed_amount = Decimal(int(raw_str)) / (Decimal(10) ** asset_decimals)
-        else:
-            parsed_amount = parse_amount(
-                payload["amount"],
-                field="amount",
-                scale=asset_decimals,
-            )
+            if payload.get("amount_raw") is not None:
+                raise NormalizationError(
+                    "Field 'amount_raw' is not allowed for NFT assets.",
+                    field="amount_raw",
+                    reason="amount_raw not allowed for NFT",
+                )
 
-        if parsed_amount == Decimal(0):
-            raise UnsupportedPayloadError(
-                "Zero-value transfers cannot be represented because Module 2 requires "
-                "strictly positive amounts. This is a documented Ripple limitation."
-            )
+            raw_qty = payload.get("quantity", "1")
+            if isinstance(raw_qty, float):
+                raise NormalizationError(
+                    "Field 'quantity' must not be a float.",
+                    field="quantity",
+                    reason="Float quantity prohibited",
+                )
+            if isinstance(raw_qty, int) and not isinstance(raw_qty, bool):
+                qty_str = str(raw_qty)
+            elif isinstance(raw_qty, str):
+                qty_str = raw_qty.strip()
+            else:
+                raise NormalizationError(
+                    "Field 'quantity' must be an integer string.",
+                    field="quantity",
+                    reason="Invalid quantity type",
+                )
+
+            if not qty_str.isdigit():
+                raise NormalizationError(
+                    f"Field 'quantity' must be an integer, got '{qty_str}'.",
+                    field="quantity",
+                    reason="Non-integer quantity",
+                )
+
+            qty_int = int(qty_str)
+            if qty_int == 0:
+                raise NormalizationError(
+                    "Field 'quantity' cannot be 0.",
+                    field="quantity",
+                    reason="Zero quantity rejected",
+                )
+
+            if token_standard and token_standard.lower() == "erc721" and qty_int != 1:
+                raise NormalizationError(
+                    "Field 'quantity' must be '1' for ERC-721 tokens.",
+                    field="quantity",
+                    reason="ERC-721 quantity must be 1",
+                )
+
+            parsed_amount = Decimal(qty_int)
+        else:
+            has_amount = payload.get("amount") is not None
+            has_amount_raw = payload.get("amount_raw") is not None
+
+            if has_amount and has_amount_raw:
+                raise NormalizationError(
+                    "Supply exactly one of 'amount' or 'amount_raw', not both.",
+                    field="amount",
+                    reason="Mutually exclusive amount and amount_raw",
+                )
+            if not has_amount and not has_amount_raw:
+                raise NormalizationError(
+                    "Missing transfer amount: supply either 'amount' or 'amount_raw'.",
+                    field="amount",
+                    reason="Missing transfer amount",
+                )
+
+            if has_amount_raw:
+                raw_str = str(payload["amount_raw"]).strip()
+                if not raw_str.isdigit():
+                    raise NormalizationError(
+                        "Field 'amount_raw' must contain only digits.",
+                        field="amount_raw",
+                        reason="Non-digit amount_raw",
+                    )
+                parsed_amount = Decimal(int(raw_str)) / (Decimal(10) ** asset_decimals)
+            else:
+                parsed_amount = parse_amount(
+                    payload["amount"],
+                    field="amount",
+                    scale=asset_decimals,
+                )
+
+            if parsed_amount == Decimal(0):
+                raise UnsupportedPayloadError(
+                    "Zero-value transfers cannot be represented because Module 2 requires "
+                    "strictly positive amounts. This is a documented Ripple limitation."
+                )
 
         # 7. Fee resolution
         fee_money: Money | None = None
@@ -288,10 +428,21 @@ class CryptoAdapter(NetworkAdapter):
                         reason="Float prohibited in fee",
                     )
 
-            fee_symbol = str(fee_dict.get("symbol", chain_spec.native_symbol)).strip().upper()
+            fee_symbol_raw = fee_dict.get("symbol")
+            if fee_symbol_raw is not None and not str(fee_symbol_raw).strip():
+                raise NormalizationError(
+                    "Field 'fee.symbol' cannot be blank.",
+                    field="fee.symbol",
+                    reason="Blank fee.symbol",
+                )
+            fee_symbol = (
+                str(fee_symbol_raw).strip().upper()
+                if fee_symbol_raw is not None
+                else chain_spec.native_symbol
+            )
             fee_decimals = chain_spec.decimals if fee_symbol == chain_spec.native_symbol else 18
             if "decimals" in fee_dict:
-                fee_decimals = int(fee_dict["decimals"])
+                fee_decimals = _parse_decimals(fee_dict["decimals"], "fee.decimals")
 
             has_fee_raw = fee_dict.get("amount_raw") is not None
             has_fee_amt = fee_dict.get("amount") is not None
@@ -332,6 +483,20 @@ class CryptoAdapter(NetworkAdapter):
         if usd_val is not None:
             normalized_value = parse_amount(usd_val, field="usd_value", scale=2)
 
+        consideration = payload.get("consideration")
+        sale_tx_hash = payload.get("sale_tx_hash")
+        if isinstance(consideration, dict):
+            if isinstance(consideration.get("usd_value"), float):
+                raise NormalizationError(
+                    "Field 'consideration.usd_value' must not be a float.",
+                    field="consideration.usd_value",
+                    reason="Float prohibited in consideration.usd_value",
+                )
+            if normalized_value is None and consideration.get("usd_value") is not None:
+                normalized_value = parse_amount(
+                    consideration["usd_value"], field="consideration.usd_value", scale=2
+                )
+
         transfer_money = Money(
             amount=parsed_amount,
             currency=asset_symbol,
@@ -364,7 +529,20 @@ class CryptoAdapter(NetworkAdapter):
         finalized_flag = payload.get("finalized")
         confirmations = payload.get("confirmations")
         if confirmations is not None:
-            confirmations = int(confirmations)
+            if isinstance(confirmations, bool):
+                raise NormalizationError(
+                    "Field 'confirmations' must be an integer, got bool.",
+                    field="confirmations",
+                    reason="Invalid confirmations type",
+                )
+            try:
+                confirmations = int(confirmations)
+            except (ValueError, TypeError) as exc:
+                raise NormalizationError(
+                    "Field 'confirmations' must be an integer.",
+                    field="confirmations",
+                    reason="Invalid confirmations format",
+                ) from exc
         reorged_flag = raw_status == "reorged"
 
         settled_at = None
@@ -517,6 +695,7 @@ class CryptoAdapter(NetworkAdapter):
             risk_flags=RiskFlags(is_sanctioned=from_sanctioned),
             attributes=from_attrs,
             home_network="crypto",
+            created_at=event.received_at,
         )
         receiver_party = Party(
             party_id=receiver_id,
@@ -525,6 +704,7 @@ class CryptoAdapter(NetworkAdapter):
             risk_flags=RiskFlags(is_sanctioned=to_sanctioned),
             attributes=to_attrs,
             home_network="crypto",
+            created_at=event.received_at,
         )
 
         # 12. Correlation and Transaction ID derivation
@@ -534,7 +714,13 @@ class CryptoAdapter(NetworkAdapter):
         network_transaction_ref = tx_hash
 
         # 13. Network metadata assembly
-        asset_id = f"{chain}:{contract_address if contract_address else 'native'}"
+        if asset_type == "nft":
+            assert contract_address is not None
+            c_addr = contract_address.lower() if family == "evm" else contract_address
+            asset_id = f"{chain}:{c_addr}:{token_id}"
+        else:
+            asset_id = f"{chain}:{contract_address if contract_address else 'native'}"
+
         network_metadata: dict[str, Any] = {
             "chain": chain,
             "tx_hash": tx_hash,
@@ -545,12 +731,18 @@ class CryptoAdapter(NetworkAdapter):
             "execution_status": execution_status,
             "asset_id": asset_id,
             "asset_contract": contract_address,
-            "token_standard": payload.get("token_standard"),
+            "token_standard": token_standard,
             "nonce": payload.get("nonce"),
             "replaced_by": payload.get("replaced_by"),
             "reorged": reorged_flag,
             "source_feed": payload.get("source_feed"),
         }
+        if token_id is not None:
+            network_metadata["token_id"] = token_id
+        if consideration is not None:
+            network_metadata["consideration"] = consideration
+        if sale_tx_hash is not None:
+            network_metadata["sale_tx_hash"] = sale_tx_hash
         if normalized_value is not None:
             network_metadata["normalized_currency"] = "USD"
 

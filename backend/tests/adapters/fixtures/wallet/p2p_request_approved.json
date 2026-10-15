@@ -1,0 +1,28 @@
+{
+  "event_type": "p2p",
+  "txn_id": "WLT_TXN_002_REQ",
+  "status": "PENDING",
+  "flow": "request",
+  "amount": "75.00",
+  "currency": "USD",
+  "created_at": "2026-10-15T09:00:00Z",
+  "requested_at": "2026-10-15T09:00:00Z",
+  "approved_at": "2026-10-15T09:05:00Z",
+  "sender": {
+    "account_id": "usr_bob_002",
+    "email": "bob@example.com",
+    "phone": "+15559876543",
+    "account_type": "personal",
+    "country": "US",
+    "kyc_level": "basic"
+  },
+  "receiver": {
+    "account_id": "usr_alice_001",
+    "email": "alice@example.com",
+    "phone": "+15551234567",
+    "account_type": "personal",
+    "country": "US",
+    "kyc_level": "full"
+  },
+  "channel": "wallet_app"
+}
