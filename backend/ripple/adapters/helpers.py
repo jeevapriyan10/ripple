@@ -21,6 +21,7 @@ from ripple.domain.errors import (
     InvalidIdentifierError,
     InvalidTransactionError,
     PrecisionError,
+    RippleDomainError,
 )
 
 
@@ -71,6 +72,13 @@ def require(
     Zero and False are valid non-empty values.
     """
     display_field = field_path or key
+    if not isinstance(payload, dict):
+        raise NormalizationError(
+            f"Expected object for field '{display_field}', got {type(payload).__name__}.",
+            field=display_field,
+            reason=f"Invalid container structure for '{display_field}'",
+        )
+
     if key not in payload:
         raise NormalizationError(
             f"Field '{display_field}' is required but missing from payload.",
@@ -311,18 +319,17 @@ class wrap_domain_errors(ContextDecorator):
         if exc_val is None:
             return False
 
-        if isinstance(exc_val, (NormalizationError, UnsupportedPayloadError)):
+        if isinstance(exc_val, NormalizationError | UnsupportedPayloadError):
             return False
 
         if isinstance(
             exc_val,
-            (
-                InvalidTransactionError,
-                InvalidIdentifierError,
-                PrecisionError,
-                CurrencyMismatchError,
-                ValidationError,
-            ),
+            RippleDomainError
+            | InvalidTransactionError
+            | InvalidIdentifierError
+            | PrecisionError
+            | CurrencyMismatchError
+            | ValidationError,
         ):
             field = self.default_field
             reason = "Domain invariant validation failed."

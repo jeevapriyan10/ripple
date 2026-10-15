@@ -39,6 +39,7 @@ from ripple.adapters.registry import (
 from ripple.adapters.swift import SWIFT_PROFILE, SwiftAdapter
 from ripple.adapters.universal import UniversalAdapter
 from ripple.adapters.upi import UPI_PROFILE, UpiAdapter
+from ripple.adapters.wallet import WALLET_PROFILE, WalletAdapter
 
 __all__ = [
     # Profile
@@ -77,4 +78,6 @@ __all__ = [
     "CRYPTO_PROFILE",
     "SwiftAdapter",
     "SWIFT_PROFILE",
+    "WalletAdapter",
+    "WALLET_PROFILE",
 ]

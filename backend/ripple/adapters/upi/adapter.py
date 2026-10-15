@@ -18,6 +18,7 @@ from ripple.adapters.helpers import (
     parse_datetime,
     payload_as_dict,
     require,
+    wrap_domain_errors,
 )
 from ripple.adapters.profile import NetworkProfile
 from ripple.adapters.upi.profile import UPI_PROFILE
@@ -288,32 +289,33 @@ class UpiAdapter(NetworkAdapter):
         ip_address = str(payload["ip_address"]) if payload.get("ip_address") else None
         purpose_code = str(payload["purpose_code"]) if payload.get("purpose_code") else None
 
-        transaction = Transaction(
-            transaction_id=transaction_id,
-            network_transaction_ref=txn_id,
-            network="UPI",
-            sender_id=payer_party.party_id,
-            receiver_id=payee_party.party_id,
-            sender_identifier=payer_primary_ident,
-            receiver_identifier=payee_primary_ident,
-            amount=Money(amount=parsed_amount, currency="INR", scale=2),
-            fee=None,
-            initiated_at=effective_initiated_at,
-            settled_at=settled_at,
-            observed_at=event.received_at,
-            status=status,
-            settlement_model=SettlementModel.INSTANT,
-            direction=TransactionDirection.TRANSFER,
-            is_reversible=False,
-            reversal_window_ends_at=None,
-            intermediary_hops=[],
-            channel=channel,
-            purpose_code=purpose_code,
-            device_id=device_id,
-            ip_address=ip_address,
-            geo_country="IN",
-            network_metadata=network_metadata,
-        )
+        with wrap_domain_errors(default_field="transaction"):
+            transaction = Transaction(
+                transaction_id=transaction_id,
+                network_transaction_ref=txn_id,
+                network="UPI",
+                sender_id=payer_party.party_id,
+                receiver_id=payee_party.party_id,
+                sender_identifier=payer_primary_ident,
+                receiver_identifier=payee_primary_ident,
+                amount=Money(amount=parsed_amount, currency="INR", scale=2),
+                fee=None,
+                initiated_at=effective_initiated_at,
+                settled_at=settled_at,
+                observed_at=event.received_at,
+                status=status,
+                settlement_model=SettlementModel.INSTANT,
+                direction=TransactionDirection.TRANSFER,
+                is_reversible=False,
+                reversal_window_ends_at=None,
+                intermediary_hops=[],
+                channel=channel,
+                purpose_code=purpose_code,
+                device_id=device_id,
+                ip_address=ip_address,
+                geo_country="IN",
+                network_metadata=network_metadata,
+            )
 
         parties = [payer_party, payee_party]
 
