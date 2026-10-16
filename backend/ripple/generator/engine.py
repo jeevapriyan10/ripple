@@ -66,6 +66,11 @@ def clear_sources() -> None:
 
 def get_sources() -> list[SourcePlanner]:
     """Return all currently registered source planners."""
+    if not _SOURCE_REGISTRY:
+        try:
+            from ripple.generator import renderers, traffic  # noqa: F401
+        except ImportError:
+            pass
     return list(_SOURCE_REGISTRY)
 
 
@@ -207,7 +212,11 @@ def generate_stream(
                 sender_institution_id=sender_inst,
                 receiver_institution_id=recv_inst,
                 label_available_at=t_seed.get("label_available_at"),
-                expected_error=bool(stage.outcome_data.get("expected_error", False)),
+                expected_error=bool(
+                    stage.outcome_data.get("expected_error", False)
+                    or t_seed.get("expected_error", False)
+                    or "malformed_mutation" in stage.outcome_data
+                ),
                 duplicate_of=ev_id if is_dup else None,
             )
 
@@ -263,7 +272,11 @@ def generate_stream(
                 sender_institution_id=sender_inst,
                 receiver_institution_id=recv_inst,
                 label_available_at=t_seed.get("label_available_at"),
-                expected_error=bool(stage.outcome_data.get("expected_error", False)),
+                expected_error=bool(
+                    stage.outcome_data.get("expected_error", False)
+                    or t_seed.get("expected_error", False)
+                    or "malformed_mutation" in stage.outcome_data
+                ),
                 duplicate_of=ev_id if is_dup else None,
             )
 

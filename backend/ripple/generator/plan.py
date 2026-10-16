@@ -50,7 +50,7 @@ class TxnPlan(BaseModel):
 class StageRenderer(Protocol):
     """Pure functional protocol converting a plan stage into a native adapter payload dict."""
 
-    def __call__(self, plan: TxnPlan, stage_index: int) -> dict[str, Any]:
+    def __call__(self, plan: TxnPlan, stage_index: int, /) -> dict[str, Any]:
         """Produce native payload dictionary without randomness or system clock reads."""
         ...
 

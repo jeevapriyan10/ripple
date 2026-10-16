@@ -109,6 +109,17 @@ class Actor(BaseModel):
     swift_identities: dict[str, Any] = Field(default_factory=dict)
     wallet_identities: dict[str, Any] = Field(default_factory=dict)
 
+    @property
+    def network_identities(self) -> dict[str, dict[str, Any]]:
+        """Return mapping of network name to identity dictionary."""
+        return {
+            "upi": self.upi_identities,
+            "card": self.card_identities,
+            "crypto": self.crypto_identities,
+            "swift": self.swift_identities,
+            "wallet": self.wallet_identities,
+        }
+
     def has_network(self, network: str) -> bool:
         """Check if actor participates on the specified network."""
         net = network.lower()

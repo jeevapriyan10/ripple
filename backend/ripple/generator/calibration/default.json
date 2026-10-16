@@ -207,5 +207,213 @@
       "citation": null,
       "note": "Log-scale dispersion of the investigator label reporting latency"
     }
+  },
+  "upi": {
+    "base_rate_per_actor_hour": {
+      "value": 0.04,
+      "unit": "rate",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Base hourly transaction initiation rate per UPI participant"
+    },
+    "p2p_ratio": {
+      "value": 0.60,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of UPI transactions that are peer-to-peer transfers"
+    },
+    "merchant_qr_ratio": {
+      "value": 0.25,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of UPI transactions that are merchant QR payments"
+    },
+    "bill_pay_ratio": {
+      "value": 0.10,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of UPI transactions that are utility/bill payments"
+    },
+    "amount_median": {
+      "value": 450.0,
+      "unit": "INR",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Median transaction amount for retail UPI transfers"
+    },
+    "amount_sigma": {
+      "value": 1.2,
+      "unit": "log_sigma",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Log-normal dispersion parameter for UPI transaction amounts"
+    },
+    "cap_amount": {
+      "value": 100000.0,
+      "unit": "INR",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Regulatory or scheme upper limit per UPI retail transfer"
+    }
+  },
+  "card": {
+    "base_rate_per_actor_hour": {
+      "value": 0.03,
+      "unit": "rate",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Base hourly authorization rate per cardholder"
+    },
+    "pos_ratio": {
+      "value": 0.55,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of card transactions that are point-of-sale terminal purchases"
+    },
+    "ecommerce_ratio": {
+      "value": 0.30,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of card transactions that are e-commerce card-not-present purchases"
+    },
+    "atm_ratio": {
+      "value": 0.10,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of card transactions that are ATM cash withdrawals"
+    },
+    "amount_median": {
+      "value": 45.0,
+      "unit": "currency_units",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Median transaction amount for card purchases"
+    },
+    "amount_sigma": {
+      "value": 1.0,
+      "unit": "log_sigma",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Log-normal dispersion parameter for card transaction amounts"
+    },
+    "approval_rate": {
+      "value": 0.93,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Proportion of legitimate authorizations approved by the issuer"
+    },
+    "mdr_fee_rate": {
+      "value": 0.015,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Merchant discount rate fee percentage"
+    }
+  },
+  "crypto": {
+    "base_rate_per_actor_hour": {
+      "value": 0.01,
+      "unit": "rate",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Base hourly on-chain transaction rate per crypto wallet actor"
+    },
+    "intel_coverage": {
+      "value": 0.70,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Probability an entity address is correctly annotated by threat intelligence"
+    }
+  },
+  "swift": {
+    "base_rate_per_actor_hour": {
+      "value": 0.002,
+      "unit": "rate",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Base hourly cross-border payment rate per international commercial entity"
+    },
+    "amount_median": {
+      "value": 15000.0,
+      "unit": "currency_units",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Median value of high-value wholesale cross-border wire transfers"
+    },
+    "amount_sigma": {
+      "value": 1.1,
+      "unit": "log_sigma",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Log-normal dispersion parameter for SWIFT cross-border payments"
+    }
+  },
+  "wallet": {
+    "base_rate_per_actor_hour": {
+      "value": 0.03,
+      "unit": "rate",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Base hourly activity rate per registered wallet user"
+    },
+    "p2p_ratio": {
+      "value": 0.50,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of wallet transactions that are peer-to-peer balance reallocations"
+    },
+    "merchant_ratio": {
+      "value": 0.30,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of wallet transactions that are merchant checkout payments"
+    },
+    "funding_ratio": {
+      "value": 0.12,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Fraction of wallet activity representing account balance funding"
+    },
+    "amount_median": {
+      "value": 35.0,
+      "unit": "currency_units",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Median transaction value on stored-value wallet ledgers"
+    },
+    "amount_sigma": {
+      "value": 1.1,
+      "unit": "log_sigma",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Log-normal dispersion parameter for wallet transaction amounts"
+    },
+    "cap_amount": {
+      "value": 10000.0,
+      "unit": "currency_units",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Platform ceiling per single wallet transfer or funding event"
+    }
+  },
+  "hard_negatives": {
+    "rate": {
+      "value": 0.03,
+      "unit": "ratio",
+      "provenance": "assumption",
+      "citation": null,
+      "note": "Proportion of background volume comprising legitimate hard negative look-alikes"
+    }
   }
 }
