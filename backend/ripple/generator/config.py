@@ -121,7 +121,7 @@ class DriftConfig(BaseModel):
 
     enabled: bool = Field(default=False, description="Enable regime shift mid-simulation")
     regime: str = Field(default="v2_mule_template", description="Target adversarial regime name")
-    shift_day: int = Field(default=15, description="Simulation day when shift occurs")
+    shift_day: float = Field(default=15.0, description="Simulation day when shift occurs")
     shape: Literal["abrupt", "gradual"] = Field(
         default="abrupt",
         description="Shape of the regime shift transition ('abrupt' or 'gradual')",

@@ -282,7 +282,63 @@ The Adapter Conformance Suite is a reusable, data-driven test library that verif
 
 - **Shared ISO-4217 Currency Table (`ripple.adapters.currencies`)**: Centralized lookup for 35+ major world currencies with scale, numeric codes, and `resolve_currency` validation.
 - **Timestamp Normalization (`parse_datetime`)**: Parses ISO-8601 strings and integer epoch seconds into timezone-aware UTC, rejecting floats, booleans, and negative values.
-- **Domain Exception Sanitization (`wrap_domain_errors`)**: Catches domain validation exceptions during entity construction and translates them into typed `NormalizationError` without echoing raw submitted account numbers or sensitive credentials.
+---
+
+## Multi-Network Synthetic Transaction Generator (`ripple.generator`)
+
+The Synthetic Transaction Generator serves as Ripple's data engine. It builds an interconnected simulated world of people, merchants, corporations, crypto exchanges, and banks to generate realistic background organic activity across all five payment networks, injects hard-negative behavioral look-alikes, and overlays ten calibrated financial crime typologies.
+
+```
++--------------------------------------------------------------------+
+|                         GeneratorConfig                            |
+|             (seed, actors, days, networks, fraud, drift)           |
++--------------------------------------------------------------------+
+                                   |
+                                   v
++--------------------------------------------------------------------+
+|                           World Model                              |
+|           (Actors, Institutions, Multi-Rail Identities)            |
++--------------------------------------------------------------------+
+                                   |
+                                   v
++--------------------------------------------------------------------+
+|                   Simulation Engine (Priority Queue)               |
+|  - Background Traffic Planners (UPI, Card, Crypto, SWIFT, Wallet)  |
+|  - 8 Hard Negative Behavioral Look-Alikes                          |
+|  - Scenario Coordinator (10 Injected Typologies, Drift Regimes)    |
++--------------------------------------------------------------------+
+                                   |
+                                   v
++--------------------------------------------------------------------+
+|                     Pure Renderers (Rule R5)                       |
+|           (Emits native payloads for the 5 Adapters)               |
++--------------------------------------------------------------------+
+                 /                                    \
+                v                                      v
++------------------------------------+  +----------------------------+
+|        events.jsonl.gz             |  |      truth.jsonl.gz        |
+|  (RawEvents passed to adapters;    |  |  (Separate sidecar keyed   |
+|   zero ground-truth labels)        |  |   1:1 by sequence index)   |
++------------------------------------+  +----------------------------+
+```
+
+### Architectural Guarantees & Invariants
+
+1. **Rule R1: Determinism**: Full reproducibility across runs, platforms, and architectures given identical configurations. Built on an isolated split-mix counter-based pseudo-random number generator (`RngFactory`).
+2. **Rule R2: Synthetic Safety**: Non-routable identifiers throughout (`+999` telephone numbers, invalid Bitcoin Base58 checksums, valid mod-97 synthetic IBANs, and strictly **no** Luhn-valid 13–19 digit PAN strings).
+3. **Rule R3: Sidecar Ground Truth**: Ground-truth labels are written to an isolated, separate `truth.jsonl.gz` sidecar file, keyed by sequence index. Raw events emitted to `events.jsonl.gz` never contain labels, scenario flags, or fraud tags.
+4. **Rule R4: Calibration Honesty**: Every empirical parameter in calibration catalogs explicitly states its source. Any parameter not backed by an authoritative cited source is tagged with `provenance: "assumption"` and `citation: null`.
+5. **Rule R5: Pure Renderers**: Payload renderers are pure functions with zero I/O and zero state.
+6. **Rule R6: Financial Precision**: All balances, fees, and transfer amounts are calculated using Python's exact `Decimal` arithmetic. Floats are prohibited in monetary fields.
+
+### Key Subsystems
+
+- **Scenario Coordinator & Typologies**: Injects 10 complex multi-hop topologies (`upi_mule_chain`, `fan_in_smurfing`, `wallet_provisional_funding_abuse`, `card_testing`, `chargeback_fraud_merchant`, `crypto_peeling_layering`, `nft_wash_trading`, `account_takeover_drain`, `swift_structuring_layering`, `cross_network_laundering`) with realistic reporting delay and adversarial drift regimes (`v2_mule_template`, `v2_card_testing`).
+- **Statistical Separability Report**: Generates rank-based AUC (Mann-Whitney U) metrics and warns against trivial leakage features (>0.90) or unlearnable targets (<0.55).
+- **Label Resolution & Temporal Splitting**: Provides realistic retrospective labeling delays (`transaction_labels_as_of`) and temporal train/val/test splits with configurable embargo purges to prevent future data leakage.
+- **REST API & CLI**: Exposes generation, previewing, and dataset verification via FastAPI endpoints and developer CLI (`python -m ripple.generator`).
+- **Documentation**: See [docs/generator/README.md](file:///docs/generator/README.md), [docs/generator/scenarios.md](file:///docs/generator/scenarios.md), [docs/generator/calibration.md](file:///docs/generator/calibration.md), [docs/generator/networks.md](file:///docs/generator/networks.md), and [docs/generator/limitations.md](file:///docs/generator/limitations.md).
+
 
 
 

@@ -18,6 +18,7 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from ripple import __version__ as GENERATOR_VERSION
 from ripple.adapters.contract import RawEvent
@@ -39,13 +40,17 @@ class DatasetError(Exception):
 
 
 class CanonicalEncoder(json.JSONEncoder):
-    """JSON encoder rendering Decimals as exact strings and datetimes as ISO-8601 with 'Z'."""
+    """JSON encoder rendering Decimals as exact strings, datetimes as ISO-8601 with 'Z',
+    and UUIDs as strings.
+    """
 
     def default(self, o: Any) -> Any:
         if isinstance(o, Decimal):
             return str(o)
         if isinstance(o, datetime):
             return iso_z(o)
+        if isinstance(o, UUID):
+            return str(o)
         return super().default(o)
 
 
@@ -98,9 +103,12 @@ def write_dataset(
     overwrite: bool = False,
     calibration_profile: CalibrationProfile | None = None,
     sources: list[SourcePlanner] | None = None,
+    strict: bool | None = None,
 ) -> Path:
     """Orchestrate full dataset generation and atomic directory writing."""
     validate_dataset_name(name)
+    if strict is None:
+        strict = sources is None
 
     target_base = base_dir or Path("./data")
     datasets_dir = target_base / "datasets"
@@ -138,19 +146,34 @@ def write_dataset(
                     line = canonical_dumps(actor.model_dump(mode="json")) + "\n"
                     f_gz.write(line.encode("utf-8"))
 
-        # 3. Stream and write events.jsonl.gz and truth.jsonl.gz
+        # 3. Stream and write events.jsonl.gz, truth.jsonl.gz, and party_map.jsonl.gz
         events_path = tmp_dir / "events.jsonl.gz"
         truth_path = tmp_dir / "truth.jsonl.gz"
+        party_map_path = tmp_dir / "party_map.jsonl.gz"
 
         total_events = 0
         counts_by_network: dict[str, int] = {}
         fraud_events = 0
         hard_negative_events = 0
+        unexpected_failures: list[dict[str, str]] = []
 
-        with open(events_path, "wb") as ev_raw, open(truth_path, "wb") as tr_raw:
+        # Load adapters for validation
+        from ripple.adapters.registry import get_registry, load_enabled_adapters
+
+        adapter_registry = get_registry()
+        load_enabled_adapters(registry=adapter_registry)
+
+        party_map: dict[tuple[str, str], str] = {}
+
+        with (
+            open(events_path, "wb") as ev_raw,
+            open(truth_path, "wb") as tr_raw,
+            open(party_map_path, "wb") as pm_raw,
+        ):
             with (
                 gzip.GzipFile(filename="", mode="wb", fileobj=ev_raw, mtime=0) as ev_gz,
                 gzip.GzipFile(filename="", mode="wb", fileobj=tr_raw, mtime=0) as tr_gz,
+                gzip.GzipFile(filename="", mode="wb", fileobj=pm_raw, mtime=0) as pm_gz,
             ):
                 for gen_event in generate_stream(
                     config, calibration_profile=calib, sources=sources
@@ -164,6 +187,33 @@ def write_dataset(
                     if gen_event.truth.hard_negative:
                         hard_negative_events += 1
 
+                    # Adapter normalization validation
+                    adapter = adapter_registry.get(net)
+                    if adapter is not None:
+                        try:
+                            res = adapter.normalize(gen_event.event)
+                            for party in res.parties:
+                                # Map parties to actors
+                                if gen_event.truth.sender_actor_id:
+                                    party_map[(gen_event.truth.sender_actor_id, net)] = (
+                                        party.party_id
+                                    )
+                                if gen_event.truth.receiver_actor_id:
+                                    party_map[(gen_event.truth.receiver_actor_id, net)] = (
+                                        party.party_id
+                                    )
+                        except Exception as exc:
+                            if not gen_event.truth.expected_error:
+                                unexpected_failures.append(
+                                    {
+                                        "event_id": gen_event.event.event_id,
+                                        "network": net,
+                                        "error_type": exc.__class__.__name__,
+                                    }
+                                )
+                                if strict and len(unexpected_failures) >= 5:
+                                    break
+
                     ev_line = canonical_dumps(gen_event.event.model_dump(mode="json")) + "\n"
                     ev_gz.write(ev_line.encode("utf-8"))
 
@@ -172,11 +222,26 @@ def write_dataset(
                     tr_line = canonical_dumps(tr_data) + "\n"
                     tr_gz.write(tr_line.encode("utf-8"))
 
+                if strict and unexpected_failures:
+                    raise DatasetError(
+                        "Unexpected adapter normalization failures occurred "
+                        f"(first 5): {unexpected_failures[:5]}"
+                    )
+
+                # Write sorted party_map
+                for (a_id, a_net), p_id in sorted(party_map.items()):
+                    pm_line = (
+                        canonical_dumps({"actor_id": a_id, "network": a_net, "party_id": p_id})
+                        + "\n"
+                    )
+                    pm_gz.write(pm_line.encode("utf-8"))
+
         # 4. Compute file checksums
         file_checksums: dict[str, str] = {
             "actors.jsonl.gz": compute_file_sha256(actors_path),
             "events.jsonl.gz": compute_file_sha256(events_path),
             "institutions.json": compute_file_sha256(institutions_path),
+            "party_map.jsonl.gz": compute_file_sha256(party_map_path),
             "truth.jsonl.gz": compute_file_sha256(truth_path),
         }
         dataset_checksum = compute_dataset_checksum(file_checksums)
@@ -197,6 +262,7 @@ def write_dataset(
                 "by_network": counts_by_network,
                 "fraud_events": fraud_events,
                 "hard_negative_events": hard_negative_events,
+                "mapped_parties": len(party_map),
             },
             "truncated_count": 0,
             "resolved_warnings": config.resolved_warnings,
@@ -291,3 +357,24 @@ def verify_dataset(path: Path) -> tuple[bool, list[str]]:
         )
 
     return len(errors) == 0, errors
+
+
+def read_party_map(path: Path) -> dict[str, str]:
+    """Read actor_id to party_id mapping from party_map.jsonl.gz.
+
+    Returns mapping actor_id -> party_id.
+    """
+    map_path = path / "party_map.jsonl.gz" if path.is_dir() else path
+    mapping: dict[str, str] = {}
+    if not map_path.exists():
+        return mapping
+
+    with gzip.open(map_path, "rt", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                row = json.loads(line)
+                mapping[row["actor_id"]] = row["party_id"]
+    return mapping
+
+
+generate_dataset = write_dataset

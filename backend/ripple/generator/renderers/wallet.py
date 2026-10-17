@@ -37,7 +37,10 @@ def render_wallet_payload(plan: TxnPlan, stage_idx: int) -> dict[str, Any]:
 
     # Rail interactions: funding and withdrawal
     if raw_event_type in {"funding", "withdrawal"}:
-        payload["account"] = {"account_id": attrs["wallet_account_id"]}
+        acct_id = attrs.get("wallet_account_id") or attrs.get(
+            "account_id", f"wal_{plan.sender_actor_id.lower()}"
+        )
+        payload["account"] = {"account_id": acct_id}
         payload["instrument"] = {
             "instrument_id": attrs["instrument_id"],
             "instrument_type": attrs.get("instrument_type", "bank"),

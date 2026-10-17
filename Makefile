@@ -70,3 +70,18 @@ fmt:
 	else \
 		cd backend && black . && ruff check --fix .; \
 	fi
+
+generate-sample:
+	@if command -v poetry >/dev/null 2>&1; then \
+		cd backend && poetry run python -m ripple.generator generate --preset small --seed 42 --name small-42; \
+	else \
+		cd backend && python -m ripple.generator generate --preset small --seed 42 --name small-42; \
+	fi
+
+verify-sample:
+	@if command -v poetry >/dev/null 2>&1; then \
+		cd backend && poetry run python -m ripple.generator verify small-42; \
+	else \
+		cd backend && python -m ripple.generator verify small-42; \
+	fi
+

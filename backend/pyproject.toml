@@ -67,5 +67,6 @@ no_implicit_reexport = true
 pythonpath = ["."]
 markers = [
     "conformance: Adapter conformance test suite",
+    "slow: Tests that run full datasets or extensive workloads",
 ]
 

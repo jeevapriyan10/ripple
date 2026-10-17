@@ -178,7 +178,15 @@ class WalletTrafficPlanner(SourcePlanner):
 
             # --- 2. Merchant Payment ---
             elif r_kind < p2p_ratio + merchant_ratio and merchants:
-                merchant = rng.choice(merchants)
+                eligible_merchants = [
+                    m
+                    for m in merchants
+                    if m.actor_id != actor.actor_id
+                    and m.network_identities.get("wallet", {}).get("account_id") != actor_acct
+                ]
+                if not eligible_merchants:
+                    continue
+                merchant = rng.choice(eligible_merchants)
                 merch_wal = merchant.network_identities.get("wallet", {})
                 merch_acct = merch_wal.get("account_id", f"wal_{merchant.actor_id.lower()}")
                 mcc = merchant.mcc or "5411"

@@ -33,13 +33,27 @@ class Settings(BaseSettings):
     CARD_PAN_TOKEN_KEY: str | None = None
     ENABLE_ADAPTER_DRY_RUN: bool | None = None
 
+    # Synthetic Generator settings
+    ENABLE_GENERATOR_API: bool | None = None
+    GENERATOR_DATA_DIR: str = "./data"
+    GENERATOR_PREVIEW_MAX_ACTORS: int = 500
+    GENERATOR_PREVIEW_MAX_DAYS: int = 3
+    GENERATOR_PREVIEW_MAX_EVENTS: int = 20000
+    GENERATOR_PREVIEW_SAMPLE_SIZE: int = 50
+
     @model_validator(mode="after")
-    def _resolve_dry_run_default(self) -> Self:
-        """Default ENABLE_ADAPTER_DRY_RUN to True in development, False otherwise."""
+    def _resolve_defaults(self) -> Self:
+        """Resolve environment-dependent defaults."""
         if self.ENABLE_ADAPTER_DRY_RUN is None:
             object.__setattr__(
                 self,
                 "ENABLE_ADAPTER_DRY_RUN",
+                self.APP_ENV == "development",
+            )
+        if self.ENABLE_GENERATOR_API is None:
+            object.__setattr__(
+                self,
+                "ENABLE_GENERATOR_API",
                 self.APP_ENV == "development",
             )
         return self

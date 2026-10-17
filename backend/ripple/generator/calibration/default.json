@@ -415,5 +415,59 @@
       "citation": null,
       "note": "Proportion of background volume comprising legitimate hard negative look-alikes"
     }
+  },
+  "scenarios": {
+    "upi_mule_chain": {
+      "hop_count_min": {"value": 2, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum layering hops in UPI mule chain"},
+      "hop_count_max": {"value": 5, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum layering hops in UPI mule chain"},
+      "forward_fraction_min": {"value": 0.90, "unit": "ratio", "provenance": "assumption", "citation": null, "note": "Minimum forward ratio per layering hop"},
+      "forward_fraction_max": {"value": 0.98, "unit": "ratio", "provenance": "assumption", "citation": null, "note": "Maximum forward ratio per layering hop"},
+      "victim_count_min": {"value": 2, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum distinct victims feeding the first-hop mule"},
+      "victim_count_max": {"value": 4, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum distinct victims feeding the first-hop mule"}
+    },
+    "fan_in_smurfing": {
+      "senders_min": {"value": 6, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum distinct smurf senders"},
+      "senders_max": {"value": 14, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum distinct smurf senders"},
+      "structuring_threshold_inr": {"value": 10000.0, "unit": "INR", "provenance": "assumption", "citation": null, "note": "Structuring threshold for Indian domestic UPI"},
+      "structuring_threshold_usd": {"value": 10000.0, "unit": "USD", "provenance": "assumption", "citation": null, "note": "Structuring threshold for wallet transfers"}
+    },
+    "wallet_provisional_funding_abuse": {
+      "hops_min": {"value": 1, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum outbound hops before funding failure"},
+      "hops_max": {"value": 3, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum outbound hops before funding failure"},
+      "reversal_delay_days_min": {"value": 2.0, "unit": "days", "provenance": "assumption", "citation": null, "note": "Minimum delay before provisional funding failure"},
+      "reversal_delay_days_max": {"value": 5.0, "unit": "days", "provenance": "assumption", "citation": null, "note": "Maximum delay before provisional funding failure"}
+    },
+    "card_testing": {
+      "burst_count_min": {"value": 6, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum authorization test burst size"},
+      "burst_count_max": {"value": 18, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum authorization test burst size"}
+    },
+    "chargeback_fraud_merchant": {
+      "sale_count_min": {"value": 8, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum sales before chargeback wave"},
+      "sale_count_max": {"value": 20, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum sales before chargeback wave"},
+      "chargeback_delay_days_min": {"value": 30.0, "unit": "days", "provenance": "assumption", "citation": null, "note": "Minimum days before chargeback dispute wave"},
+      "chargeback_delay_days_max": {"value": 60.0, "unit": "days", "provenance": "assumption", "citation": null, "note": "Maximum days before chargeback dispute wave"}
+    },
+    "crypto_peeling_layering": {
+      "hop_count_min": {"value": 8, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum hops in peeling chain"},
+      "hop_count_max": {"value": 20, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum hops in peeling chain"},
+      "peel_fraction_min": {"value": 0.02, "unit": "ratio", "provenance": "assumption", "citation": null, "note": "Minimum peel fraction per hop"},
+      "peel_fraction_max": {"value": 0.08, "unit": "ratio", "provenance": "assumption", "citation": null, "note": "Maximum peel fraction per hop"}
+    },
+    "nft_wash_trading": {
+      "ring_size_min": {"value": 3, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum participants in wash trading ring"},
+      "ring_size_max": {"value": 6, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum participants in wash trading ring"},
+      "cycle_count_min": {"value": 6, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum circular transfers in cycle"},
+      "cycle_count_max": {"value": 16, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum circular transfers in cycle"},
+      "price_escalation_pct": {"value": 0.15, "unit": "ratio", "provenance": "assumption", "citation": null, "note": "Price step percentage per cycle"}
+    },
+    "account_takeover_drain": {
+      "payout_count_min": {"value": 1, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum outbound drain transfers"},
+      "payout_count_max": {"value": 4, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum outbound drain transfers"}
+    },
+    "swift_structuring_layering": {
+      "jurisdiction_count_min": {"value": 3, "unit": "count", "provenance": "assumption", "citation": null, "note": "Minimum jurisdictions in correspondent chain"},
+      "jurisdiction_count_max": {"value": 5, "unit": "count", "provenance": "assumption", "citation": null, "note": "Maximum jurisdictions in correspondent chain"},
+      "structuring_threshold_usd": {"value": 50000.0, "unit": "USD", "provenance": "assumption", "citation": null, "note": "Regulatory reporting threshold for wires"}
+    }
   }
 }
