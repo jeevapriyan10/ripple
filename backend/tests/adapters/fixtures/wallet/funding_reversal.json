@@ -1,0 +1,25 @@
+{
+  "event_type": "reversal",
+  "original_event_type": "funding",
+  "txn_id": "WLT_TXN_004_FUND",
+  "amount": "500.00",
+  "currency": "USD",
+  "reversal_reason": "funding_failed",
+  "created_at": "2026-10-15T11:00:00Z",
+  "original_completed_at": "2026-10-15T11:00:10Z",
+  "reversed_at": "2026-10-15T12:00:00Z",
+  "account": {
+    "account_id": "usr_alice_001",
+    "email": "alice@example.com",
+    "phone": "+15551234567",
+    "account_type": "personal",
+    "country": "US",
+    "kyc_level": "full"
+  },
+  "instrument": {
+    "instrument_id": "tok_bank_checking_99",
+    "instrument_type": "bank_account",
+    "country": "US"
+  },
+  "channel": "wallet_app"
+}

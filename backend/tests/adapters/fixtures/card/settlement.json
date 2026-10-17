@@ -1,0 +1,27 @@
+{
+  "event_type": "settlement",
+  "network_reference": "NETREF_CARD_001_AUTH",
+  "processing_code": "00",
+  "pan": "4111111111111111",
+  "amount": "105.00",
+  "currency": "USD",
+  "transmission_time": "2026-10-15T00:00:00Z",
+  "settlement_date": "2026-10-15",
+  "acquirer": {
+    "id": "ACQ_101"
+  },
+  "scheme": "Visa",
+  "issuer": {
+    "id": "ISS_202",
+    "country": "US"
+  },
+  "merchant": {
+    "id": "MERC_555",
+    "name": "Acme Store",
+    "mcc": "5411",
+    "country": "US",
+    "city": "San Francisco"
+  },
+  "mdr_fee": "2.10",
+  "channel": "ecommerce"
+}

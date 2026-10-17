@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "network_id": "wallet",
+  "options": {
+    "network_stamp_exempt": false,
+    "profile_consistency_exempt": false
+  },
+  "cases": [
+    {
+      "name": "wallet_p2p_send_completed",
+      "fixture": "p2p_send_completed.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_wlt_p2p_001",
+      "must_appear": ["WLT_TXN_001_P2P"],
+      "must_not_appear": ["Alice Sender", "123 Elm St", "4111111111111111"]
+    },
+    {
+      "name": "wallet_p2p_request_requested",
+      "fixture": "p2p_request_requested.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_wlt_req_001",
+      "must_appear": ["WLT_TXN_002_REQ"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "wallet_p2p_request_completed",
+      "fixture": "p2p_request_completed.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_wlt_req_001",
+      "must_appear": ["WLT_TXN_002_REQ"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "wallet_funding_pending",
+      "fixture": "funding_pending.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_wlt_fund_001",
+      "must_appear": ["WLT_TXN_004_FUND"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "wallet_funding_completed",
+      "fixture": "funding_completed.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "ok",
+      "group": "grp_wlt_fund_001",
+      "must_appear": ["WLT_TXN_004_FUND"],
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "wallet_error_missing_amount",
+      "fixture": "error_missing_amount.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "NormalizationError",
+      "error_field": "amount",
+      "must_not_appear": ["4111111111111111"]
+    },
+    {
+      "name": "wallet_error_unsupported_event_type",
+      "fixture": "error_unsupported_event_type.json",
+      "payload_format": "JSON",
+      "received_at": "2026-10-15T12:00:00Z",
+      "expect": "error",
+      "error_type": "UnsupportedPayloadError",
+      "must_not_appear": ["4111111111111111"]
+    }
+  ]
+}

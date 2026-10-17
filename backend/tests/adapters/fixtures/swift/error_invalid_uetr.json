@@ -1,0 +1,8 @@
+{
+  "event_type": "payment",
+  "settlement_amount": {
+    "amount": "50000.00",
+    "currency": "EUR"
+  },
+  "uetr": "not-a-valid-uuid"
+}

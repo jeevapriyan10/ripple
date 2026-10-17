@@ -1,0 +1,16 @@
+{
+  "event_type": "reversal",
+  "network_reference": "NETREF_CARD_003_REV",
+  "processing_code": "00",
+  "pan": "5555555555554444",
+  "amount": "50.00",
+  "currency": "840",
+  "transmission_time": "2026-10-13T13:00:00Z",
+  "acquirer": {
+    "id": "ACQ_101"
+  },
+  "merchant": {
+    "id": "MERC_555"
+  },
+  "channel": "pos"
+}
