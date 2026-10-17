@@ -28,8 +28,10 @@ def apply_ground_truth(result: NormalizationResult, truth: EventTruth) -> None:
     # Map roles onto sender and receiver parties if present
     for p in result.parties:
         role_to_apply: str | None = None
+        # pyrefly: ignore[not-iterable]
         if truth.sender_role and truth.sender_actor_id in p.party_id:
             role_to_apply = truth.sender_role
+        # pyrefly: ignore[not-iterable]
         elif truth.receiver_role and truth.receiver_actor_id in p.party_id:
             role_to_apply = truth.receiver_role
 

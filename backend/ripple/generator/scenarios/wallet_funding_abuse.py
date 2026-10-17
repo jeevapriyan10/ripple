@@ -173,6 +173,7 @@ class WalletProvisionalFundingAbuseScenario(Scenario):
                         "pattern": self.pattern,
                         "regime": ctx.regime,
                         "is_fraud": True,
+                        # pyrefly: ignore[missing-attribute]
                         "sender_role": roles[prev_node.actor_id].value
                         if roles.get(prev_node.actor_id)
                         else None,

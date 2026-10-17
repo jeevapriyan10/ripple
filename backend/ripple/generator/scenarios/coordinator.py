@@ -50,7 +50,9 @@ class ScenarioCoordinator:
         # 1. Process Forced Starts
         forced_starts = cfg.fraud.forced_starts or []
         for f_idx, forced in enumerate(forced_starts):
+            # pyrefly: ignore[missing-attribute]
             f_sc = forced.scenario if hasattr(forced, "scenario") else forced.get("scenario")
+            # pyrefly: ignore[missing-attribute]
             f_hr = forced.at_hour if hasattr(forced, "at_hour") else forced.get("at_hour")
             if f_hr == hour_offset and f_sc in catalog:
                 cls = catalog[f_sc]

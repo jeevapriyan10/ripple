@@ -35,12 +35,14 @@ from ripple.main import create_app
 
 
 @pytest.fixture
+# pyrefly: ignore[unannotated-return]
 def test_world():
     cfg = GeneratorConfig.from_preset("tiny", seed=1001)
     calib = load_calibration_profile("default")
     return cfg, calib, build_world(cfg, calib)
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_upi_mule_chain_invariants(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(1234)
@@ -63,6 +65,7 @@ def test_upi_mule_chain_invariants(test_world):
     assert MuleRole.CASH_OUT in plan.roles.values()
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_crypto_peeling_exact_decimal_conservation(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(2345)
@@ -89,6 +92,7 @@ def test_crypto_peeling_exact_decimal_conservation(test_world):
         curr = f_p.amount
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_fan_in_smurfing_structuring_under_threshold(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(3456)
@@ -108,6 +112,7 @@ def test_fan_in_smurfing_structuring_under_threshold(test_world):
         assert p.amount < threshold, f"Amount {p.amount} not structured under {threshold}"
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_wallet_provisional_funding_abuse_lifecycle(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(4567)
@@ -133,6 +138,7 @@ def test_wallet_provisional_funding_abuse_lifecycle(test_world):
         assert op.stages[0].event_time < fund_plan.stages[1].event_time
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_card_testing_high_decline_ratio(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(5678)
@@ -149,6 +155,7 @@ def test_card_testing_high_decline_ratio(test_world):
     assert plan.summary["approved_count"] >= 1
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_chargeback_fraud_merchant_delay_window(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(6789)
@@ -168,6 +175,7 @@ def test_chargeback_fraud_merchant_delay_window(test_world):
         assert 25.0 <= delay_days <= 65.0
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_nft_wash_trading_ring_closure(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(7890)
@@ -184,6 +192,7 @@ def test_nft_wash_trading_ring_closure(test_world):
     assert plan.summary["final_price"] > plan.summary["initial_price"]
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_account_takeover_telemetry_precedes_drain(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(8901)
@@ -202,6 +211,7 @@ def test_account_takeover_telemetry_precedes_drain(test_world):
         assert p.attrs["ip_address"] == plan.summary["rogue_ip"]
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_swift_structuring_jurisdiction_span(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(9012)
@@ -218,6 +228,7 @@ def test_swift_structuring_jurisdiction_span(test_world):
     assert plan.summary["structured_amount"] < plan.summary["threshold"]
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_cross_network_laundering_multi_rail_traversal(test_world):
     cfg, calib, world = test_world
     factory = RngFactory(9123)
@@ -234,6 +245,7 @@ def test_cross_network_laundering_multi_rail_traversal(test_world):
     assert {"wallet", "swift", "crypto"}.issubset(nets)
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_forced_starts_land_at_exact_hour(test_world):
     cfg = GeneratorConfig(
         seed=42,
@@ -259,6 +271,7 @@ def test_forced_starts_land_at_exact_hour(test_world):
     assert 5.0 <= hours_from_start < 6.0
 
 
+# pyrefly: ignore[unannotated-return]
 def test_drift_regime_abrupt_boundary():
     cfg = GeneratorConfig(
         seed=123,
@@ -285,6 +298,7 @@ def test_drift_regime_abrupt_boundary():
             assert ev.truth.regime == "v2_mule_template"
 
 
+# pyrefly: ignore[unannotated-return]
 def test_rank_auc_toy_and_warnings():
     # Case 1: Perfect separation (positives all > negatives)
     positives = [10.0, 12.0, 15.0]
@@ -297,6 +311,7 @@ def test_rank_auc_toy_and_warnings():
     assert compute_rank_auc(positives, negatives) == 0.5
 
 
+# pyrefly: ignore[unannotated-return]
 def test_temporal_split_embargo_purge():
     cfg = GeneratorConfig.from_preset("tiny", seed=777)
     events = list(generate_stream(cfg))
@@ -309,6 +324,7 @@ def test_temporal_split_embargo_purge():
     assert len(splits["purged"]) > 0
 
 
+# pyrefly: ignore[implicit-any-parameter, unannotated-return]
 def test_dataset_generation_end_to_end(tmp_path):
     cfg = GeneratorConfig.from_preset("tiny", seed=42)
     ds_path = generate_dataset(cfg, name="tiny-42", base_dir=tmp_path, overwrite=True, strict=True)
@@ -330,6 +346,7 @@ def test_dataset_generation_end_to_end(tmp_path):
     assert len(report.separability_top5) > 0
 
 
+# pyrefly: ignore[unannotated-return]
 def test_generator_api_endpoints():
     app = create_app()
     client = TestClient(app)
@@ -364,6 +381,7 @@ def test_generator_api_endpoints():
 
 
 @pytest.mark.slow
+# pyrefly: ignore[unannotated-return]
 def test_generator_events_per_second_benchmark():
     import time
 

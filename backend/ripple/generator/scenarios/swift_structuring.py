@@ -95,7 +95,9 @@ class SwiftStructuringLayeringScenario(Scenario):
             debtor_bic = snd.swift_identities.get("bic") or "ZRPAUS33XXX"
             creditor_bic = rcv.swift_identities.get("bic") or "ZRPBUS33XXX"
 
+            # pyrefly: ignore[missing-attribute]
             snd_role = roles[snd.actor_id].value if roles.get(snd.actor_id) else None
+            # pyrefly: ignore[missing-attribute]
             rcv_role = roles[rcv.actor_id].value if roles.get(rcv.actor_id) else None
             uetr_ts = int(t_inst.timestamp()) % 100000000000
 

@@ -140,6 +140,7 @@ class CryptoPeelingLayeringScenario(Scenario):
                         "pattern": self.pattern,
                         "regime": ctx.regime,
                         "is_fraud": True,
+                        # pyrefly: ignore[missing-attribute]
                         "sender_role": roles[snd_actor.actor_id].value
                         if roles.get(snd_actor.actor_id)
                         else None,
@@ -182,6 +183,7 @@ class CryptoPeelingLayeringScenario(Scenario):
                         "pattern": self.pattern,
                         "regime": ctx.regime,
                         "is_fraud": True,
+                        # pyrefly: ignore[missing-attribute]
                         "sender_role": roles[snd_actor.actor_id].value
                         if roles.get(snd_actor.actor_id)
                         else None,

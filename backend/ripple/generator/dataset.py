@@ -196,16 +196,19 @@ def write_dataset(
                                 # Map parties to actors
                                 if gen_event.truth.sender_actor_id:
                                     party_map[(gen_event.truth.sender_actor_id, net)] = (
+                                        # pyrefly: ignore[unsupported-operation]
                                         party.party_id
                                     )
                                 if gen_event.truth.receiver_actor_id:
                                     party_map[(gen_event.truth.receiver_actor_id, net)] = (
+                                        # pyrefly: ignore[unsupported-operation]
                                         party.party_id
                                     )
                         except Exception as exc:
                             if not gen_event.truth.expected_error:
                                 unexpected_failures.append(
                                     {
+                                        # pyrefly: ignore[bad-assignment]
                                         "event_id": gen_event.event.event_id,
                                         "network": net,
                                         "error_type": exc.__class__.__name__,
