@@ -1,8 +1,10 @@
 # Ripple
 
-[![Status: Under active development](https://img.shields.io/badge/status-under%20active%20development-orange.svg)](#)
+[![Status: Pre-release v0.1.0](https://img.shields.io/badge/status-pre--release%20v0.1.0-blue.svg)](#)
 
-Real-time, network-agnostic fraud detection via graph learning.
+> **Pre-release v0.1.0**: Domain model, 5 network adapters, adapter conformance suite, and multi-network synthetic transaction generator are implemented; graph storage, streaming and scoring are in progress.
+
+Real-time, network-agnostic payment-fraud detection platform via graph learning.
 
 ## Architecture
 
@@ -84,12 +86,30 @@ make lint
 # Auto-format codebase
 make fmt
 
+# Generate benchmark synthetic dataset
+make generate-sample
+
+# Verify dataset cryptographic integrity
+make verify-sample
+
 # Tail container logs
 make logs
 
 # Stop and remove containers
 make down
 ```
+
+## Synthetic Data Engine & Safety Disclaimer
+
+Ripple includes a multi-network synthetic transaction generator (`ripple.generator`) that models realistic transaction traffic across all five payment networks, injects 10 complex multi-hop financial crime typologies, and outputs canonical payloads for testing and benchmark training.
+
+### Safety Guarantees
+- **No Real Customer Data**: All actors, transactions, and credentials are synthetically generated via deterministic pseudorandom generation.
+- **Non-Routable Identifiers**: Phone numbers use the `+999` reserved prefix; Bitcoin Base58 addresses have deliberately corrupt checksums; IBANs are synthetic mod-97 valid numbers using fictional financial institution codes.
+- **No Card PANs**: Raw 13–19 digit credit card numbers and Luhn-valid sequences are strictly prohibited and never generated.
+- **Sidecar Truth**: Ground-truth labels are written to an isolated `truth.jsonl.gz` sidecar file and never leak into raw event payloads.
+
+For full details, see [docs/generator/README.md](file:///docs/generator/README.md) and [docs/generator/scenarios.md](file:///docs/generator/scenarios.md).
 
 ## Scope & Limitations
 
@@ -103,4 +123,5 @@ To remain open, reproducible, and cloud-native, Ripple targets documented, simpl
 ### Additional Known Boundaries
 - **Zero-Amount Authorizations**: Account-verification checks ($0.00 authorizations) cannot be modeled because the universal domain model strictly requires positive transaction amounts ($> 0$). These are explicitly rejected at adapter boundary.
 - **Entity Resolution**: An individual counterparty transacting across multiple identifiers (e.g., card token vs. VPA vs. phone) initially manifests as separate `Party` nodes. Multi-identifier persona linkage is resolved downstream by Module 8 (Mesh Entity Resolution).
-- **Institutional Hops as Super-Nodes**: In four-party card models, global payment schemes and major acquirers process millions of transactions, creating high-degree super-nodes in the transaction graph.
+- **Institutional Hops as Super-Nodes**: In four-party card models, global payment schemes and major acquirers process millions of transactions, creating high-degree super-nodes in the transaction graph.
+- **Generator Limitations**: See [docs/generator/limitations.md](file:///docs/generator/limitations.md) for assumptions regarding stationary actor populations, unobserved cash off-ramps, and empirical diurnal curves.

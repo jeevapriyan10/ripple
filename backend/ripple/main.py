@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 
 from ripple import __version__
 from ripple.adapters.registry import load_enabled_adapters
+from ripple.api.generator import router as generator_router
 from ripple.api.health import READINESS_CHECKS, register_readiness_check
 from ripple.api.health import router as health_router
 from ripple.api.networks import check_adapters
@@ -120,6 +121,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(networks_router, prefix="/api/v1")
+    app.include_router(generator_router, prefix="/api/v1")
 
     return app
 

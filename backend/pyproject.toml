@@ -12,6 +12,7 @@ fastapi = "^0.115.0"
 uvicorn = {extras = ["standard"], version = "^0.32.0"}
 pydantic = "^2.9.2"
 pydantic-settings = "^2.6.0"
+tzdata = ">=2024.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
@@ -66,5 +67,6 @@ no_implicit_reexport = true
 pythonpath = ["."]
 markers = [
     "conformance: Adapter conformance test suite",
+    "slow: Tests that run full datasets or extensive workloads",
 ]
 

@@ -59,3 +59,6 @@ Desktop.ini
 *.p12
 credentials.json
 secrets/
+
+# Data & Datasets
+data/
